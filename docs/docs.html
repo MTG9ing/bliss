@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Bliss documentation - Complete guide to the automated backend architect CLI tool. Installation, commands, modules, and API reference.">
+<meta name="keywords" content="bliss documentation, CLI docs, backend automation, express, fastify, nodejs">
+<meta name="author" content="mtg9ing">
+<meta name="theme-color" content="#0f0f1a">
+<meta property="og:title" content="Bliss Documentation">
+<meta property="og:description" content="Complete guide to Bliss - the automated backend architect CLI tool.">
+<meta property="og:type" content="website">
+<title>Documentation — Bliss</title>
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+.docs-page { padding-top: 80px; min-height: 100vh; }
+.docs-header {
+  text-align: center;
+  padding: 60px 24px 40px;
+  border-bottom: 1px solid var(--border);
+}
+.docs-header h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+.docs-header p {
+  color: var(--text-muted);
+  max-width: 500px;
+  margin: 0 auto;
+}
+.docs-grid {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+.doc-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  transition: border-color 0.2s;
+}
+.doc-card:hover {
+  border-color: var(--text-dim);
+}
+.doc-card h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.doc-card h2 code {
+  background: var(--bg-elevated);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9em;
+  color: var(--accent-light);
+}
+.doc-card p {
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  line-height: 1.7;
+}
+.doc-card ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.doc-card ul li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--text-muted);
+}
+.doc-card ul li::before {
+  content: "—";
+  color: var(--accent);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.doc-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.doc-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 12px;
+  border-radius: 100px;
+  background: var(--bg-elevated);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+.doc-tag.blue { color: var(--accent-light); border-color: rgba(99,102,241,0.3); }
+.doc-tag.red { color: var(--red); border-color: rgba(239,68,68,0.3); }
+.doc-tag.green { color: var(--green); border-color: rgba(34,197,94,0.3); }
+.doc-tag.purple { color: var(--purple); border-color: rgba(168,85,247,0.3); }
+.doc-tag.cyan { color: var(--cyan); border-color: rgba(6,182,212,0.3); }
+
+@media (max-width: 640px) {
+  .doc-card { padding: 24px; }
+  .docs-grid { padding: 32px 16px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+<div class="nav-inner">
+<a href="index.html" class="logo">
+<img src="logo.svg" alt="Bliss" class="logo-img" width="32" height="32">
+<span class="logo-text">Bliss</span>
+</a>
+<button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+<span></span><span></span><span></span>
+</button>
+<ul class="nav-links" id="navLinks">
+<li><a href="index.html#features">Features</a></li>
+<li><a href="docs.html" class="active">Docs</a></li>
+<li><a href="index.html#demo">Demo</a></li>
+<li><a href="https://www.npmjs.com/package/@mtg9ing/bliss" target="_blank" rel="noopener noreferrer" class="nav-cta">npm</a></li>
+</ul>
+</div>
+</nav>
+
+<main class="docs-page">
+<div class="docs-header">
+<h1><span class="gradient-text">Documentation</span></h1>
+<p>Everything you need to know about Bliss — from installation to advanced configuration.</p>
+</div>
+
+<div class="docs-grid">
+
+<div class="doc-card" id="installation">
+<h2>Installation</h2>
+<p>Install Bliss globally via npm or bun. Requires Node.js 18+ or Bun 1.0+.</p>
+<div class="code-block" style="margin-bottom:16px">
+<div class="code-header"><span class="code-lang">bash</span></div>
+<pre><code class="language-bash">npm install -g @mtg9ing/bliss
+
+# Or with Bun
+bun add -g @mtg9ing/bliss
+
+# Verify
+bliss --version
+# 1.0.4</code></pre>
+</div>
+<div class="doc-meta">
+<span class="doc-tag">npm</span>
+<span class="doc-tag">bun</span>
+<span class="doc-tag green">global</span>
+</div>
+</div>
+
+<div class="doc-card" id="commands">
+<h2>Commands</h2>
+<p>Bliss has two core commands that work together to analyze and enhance your project.</p>
+<ul>
+<li><strong><code>bliss init</code></strong> — Analyzes your workspace and generates a <code>bliss.json</code> config file</li>
+<li><strong><code>bliss boost</code></strong> — Injects architectural modules into your existing backend</li>
+</ul>
+<div class="doc-meta">
+<span class="doc-tag blue">init</span>
+<span class="doc-tag purple">boost</span>
+</div>
+</div>
+
+<div class="doc-card" id="init">
+<h2><code>bliss init</code></h2>
+<p>Scans your project structure and creates a configuration file tailored to your setup.</p>
+<ul>
+<li>Detects framework (Express, Fastify, or vanilla Node.js)</li>
+<li>Identifies package manager (npm, bun, pnpm, yarn)</li>
+<li>Finds entry point and directory structure</li>
+<li>Detects ORM (Prisma, Mongoose, or none)</li>
+<li>Interactive prompts for anything it cannot auto-detect</li>
+</ul>
+<div class="doc-meta">
+<span class="doc-tag">auto-detect</span>
+<span class="doc-tag cyan">interactive</span>
+</div>
+</div>
+
+<div class="doc-card" id="boost">
+<h2><code>bliss boost</code></h2>
+<p>The core command. Select from four architectural layers to inject into your project.</p>
+<ul>
+<li><strong>Logger</strong> — Pino-powered structured logging with HTTP request tracking</li>
+<li><strong>Error Handler</strong> — Global error boundary with safe production responses</li>
+<li><strong>Auth Guard</strong> — JWT validation with role-based access control</li>
+<li><strong>Env Loader</strong> — Zod-based .env validation with auto-discovery</li>
+</ul>
+<div class="doc-meta">
+<span class="doc-tag blue">logger</span>
+<span class="doc-tag red">errors</span>
+<span class="doc-tag purple">auth</span>
+<span class="doc-tag green">env</span>
+</div>
+</div>
+
+<div class="doc-card" id="safety">
+<h2>Safety Guarantees</h2>
+<p>Bliss is designed to never break your code. Every injection is surgical and reversible.</p>
+<ul>
+<li>Double-install protection via <code>modulesInstalled</code> tracking</li>
+<li>Anchor validation — warns if target string is not found</li>
+<li>Non-destructive edits using MagicString for precise AST-safe modifications</li>
+<li>All changes tagged with <code>// Injected by Bliss Engine</code></li>
+<li>Graceful fallback with manual integration instructions</li>
+</ul>
+<div class="doc-meta">
+<span class="doc-tag green">safe</span>
+<span class="doc-tag">reversible</span>
+</div>
+</div>
+
+<div class="doc-card" id="config">
+<h2>bliss.json</h2>
+<p>The single source of truth for your project configuration.</p>
+<div class="code-block" style="margin-bottom:16px">
+<div class="code-header"><span class="code-lang">json</span></div>
+<pre><code class="language-json">{
+  "$schema": "https://bliss.dev/schema.json",
+  "language": "typescript",
+  "packageManager": "npm",
+  "architecture": {
+    "framework": "express",
+    "orm": "prisma",
+    "databaseEngine": "postgresql"
+  },
+  "paths": {
+    "entryPoint": "src/index.ts",
+    "utilsDir": "src/utils",
+    "envConfig": "src/configurations/env.ts"
+  },
+  "upgrades": {
+    "centralizedEnv": true
+  },
+  "modulesInstalled": ["logger", "errors"]
+}</code></pre>
+</div>
+<div class="doc-meta">
+<span class="doc-tag">config</span>
+<span class="doc-tag cyan">json</span>
+</div>
+</div>
+
+<div class="doc-card" id="contribute">
+<h2>Contributing</h2>
+<p>Bliss is open source and welcomes contributions from the community.</p>
+<ul>
+<li><strong>Submit an Issue</strong> — Found a bug or have a feature idea? Open an issue on GitHub</li>
+<li><strong>Pull Requests</strong> — Follow existing code style and include tests</li>
+<li><strong>Community</strong> — Join discussions and help make backend setup obsolete</li>
+</ul>
+<div class="doc-meta">
+<span class="doc-tag">open source</span>
+<span class="doc-tag green">MIT</span>
+</div>
+</div>
+
+</div>
+</main>
+
+<footer class="footer">
+<div class="container">
+<div class="footer-inner">
+<div class="footer-brand">
+<img src="logo.svg" alt="Bliss" class="logo-img" width="24" height="24">
+<span class="logo-text">Bliss</span>
+<p>Built with passion for the developer community.</p>
+</div>
+<div class="footer-links">
+<a href="https://www.npmjs.com/package/@mtg9ing/bliss" target="_blank" rel="noopener noreferrer">npm</a>
+<a href="https://github.com/mtg9ing/bliss" target="_blank" rel="noopener noreferrer">GitHub</a>
+<a href="https://linkedin.com/in/mtg9ing" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+<a href="docs.html">Documentation</a>
+<a href="index.html#demo">Demo</a>
+</div>
+</div>
+<div class="footer-bottom">
+<p>&copy; 2026 Bliss — Created by <a href="https://github.com/mtg9ing" target="_blank" rel="noopener noreferrer">@mtg9ing</a> · MIT License</p>
+</div>
+</div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
