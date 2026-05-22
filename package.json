@@ -1,0 +1,29 @@
+{
+  "bin": {
+    "bliss": "dist/index.js"
+  },
+  "name": "@mtg9ing/bliss",
+  "version": "1.0.4",
+  "module": "index.ts",
+  "type": "module",
+  "keywords": [
+    "cli",
+    "backend",
+    "express",
+    "developer-experience",
+    "automation",
+    "bliss"
+  ],
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.4.0",
+    "citty": "^0.2.2",
+    "magic-string": "^0.30.21",
+    "yoctocolors": "^2.1.2"
+  }
+}
