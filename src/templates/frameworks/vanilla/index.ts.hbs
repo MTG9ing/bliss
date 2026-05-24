@@ -1,0 +1,37 @@
+import { createServer } from "node:http";
+
+const PORT = parseInt(process.env.PORT || "{{port}}", 10);
+
+const server = createServer((req, res) => {
+  const url = new URL(req.url || "/", `http://${req.headers.host}`);
+
+  res.setHeader("Content-Type", "application/json");
+
+  if (url.pathname === "/health") {
+    res.writeHead(200);
+    res.end(JSON.stringify({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+    }));
+    return;
+  }
+
+  if (url.pathname === "/api") {
+    res.writeHead(200);
+    res.end(JSON.stringify({
+      message: "Welcome to {{projectName}}",
+      framework: "{{framework}}",
+      version: "1.0.0",
+    }));
+    return;
+  }
+
+  res.writeHead(404);
+  res.end(JSON.stringify({ success: false, error: "Not found" }));
+});
+
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
+
+export default server;

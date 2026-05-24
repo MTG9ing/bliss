@@ -1,0 +1,12 @@
+import { Elysia } from "elysia";
+
+const routes = new Elysia({ prefix: "/api" })
+  .get("/", () => ({
+    message: "Welcome to {{projectName}}",
+    framework: "{{framework}}",
+    version: "1.0.0",
+  }));
+
+// Add your routes here
+
+export { routes };

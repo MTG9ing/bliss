@@ -1,156 +1,84 @@
 import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
-import yocto from "yoctocolors";
-import { writeFile, readFile, access } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
-
-async function fileExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { buildContext, detectFramework } from "../core/detector.ts";
+import { createConfig, saveConfig, hasConfig, loadConfig } from "../core/config.ts";
+import { runHealthChecks, printHealthChecks } from "../core/validator.ts";
+import { c } from "../utils/colors.ts";
 
 export default defineCommand({
   meta: {
     name: "init",
-    description: "Analyze workspace and generate custom bliss.json configuration",
+    description: "Analyze and configure an existing project",
   },
-  async run() {
-    p.intro(yocto.bgMagenta(yocto.black(" bliss init ")));
+  args: {
+    force: {
+      type: "boolean",
+      description: "Overwrite existing config",
+      default: false,
+    },
+  },
+  async run({ args }) {
+    p.intro(c.bold("🔧 Bliss Init — Configure existing project"));
 
-    const s = p.spinner();
-    s.start("Analyzing your repository architecture...");
+    const cwd = process.cwd();
+    const pkgPath = join(cwd, "package.json");
 
-    // ==========================================
-    // 1. ADVANCED AUTOMATED SCANS
-    // ==========================================
-    
-    // Detect Root Directory Strategy (src vs source vs root)
-    let baseDir = "";
-    if (await fileExists(join(process.cwd(), "src"))) baseDir = "src";
-    else if (await fileExists(join(process.cwd(), "source"))) baseDir = "source";
-
-    // Detect Language
-    const isTypeScript = await fileExists(join(process.cwd(), "tsconfig.json"));
-    const extension = isTypeScript ? "ts" : "js";
-    
-    // Detect Package Manager
-    let detectedPM = "npm";
-    if (await fileExists(join(process.cwd(), "bun.lock"))) detectedPM = "bun";
-    else if (await fileExists(join(process.cwd(), "pnpm-lock.yaml"))) detectedPM = "pnpm";
-    else if (await fileExists(join(process.cwd(), "yarn.lock"))) detectedPM = "yarn";
-
-    // Detect Framework & ORM
-    let detectedFramework = "unknown";
-    let detectedORM = "none";
-    
-    if (await fileExists(join(process.cwd(), "package.json"))) {
-      try {
-        const pkg = JSON.parse(await readFile(join(process.cwd(), "package.json"), "utf-8"));
-        const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-        
-        if (deps["express"]) detectedFramework = "express";
-        else if (deps["fastify"]) detectedFramework = "fastify";
-        
-        if (deps["@prisma/client"] || deps["prisma"]) detectedORM = "prisma";
-        else if (deps["mongoose"]) detectedORM = "mongoose";
-      } catch {}
+    if (!existsSync(pkgPath)) {
+      p.cancel("No package.json found. Run this in a Node.js project directory.");
+      return;
     }
 
-    // Smart-calculate cleanest default entry point path based on findings
-    const defaultEntry = baseDir 
-      ? `${baseDir}/index.${extension}` 
-      : `index.${extension}`;
+    // Check existing config
+    if (hasConfig(cwd) && !args.force) {
+      const existing = loadConfig(cwd);
+      const overwrite = await p.confirm({
+        message: `bliss.config.json already exists (framework: ${existing?.framework}). Overwrite?`,
+        initialValue: false,
+      });
+      if (!overwrite || p.isCancel(overwrite)) {
+        p.cancel("Keeping existing config");
+        return;
+      }
+    }
 
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    s.stop("Repository analysis complete.");
+    const s = p.spinner();
+    s.start("Analyzing project...");
 
-    // ==========================================
-    // 2. ADAPTIVE INTERVIEW PROMPTS
-    // ==========================================
-    const projectSetup = await p.group({
-      // Only asks to clarify framework if auto-detection comes up empty
-      framework: () => detectedFramework === "unknown" 
-        ? p.select({
-            message: "We couldn't detect a framework. Which one are you using?",
-            options: [
-              { value: "express", label: "Express" },
-              { value: "fastify", label: "Fastify" },
-              { value: "none", label: "Vanilla Node.js HTTP (No Framework)" }
-            ]
-          })
-        : Promise.resolve(detectedFramework),
+    const context = buildContext(cwd);
+    s.stop("Analysis complete");
 
-      packageManager: () => p.select({
-        message: `Confirm your package manager (We detected: ${yocto.bold(detectedPM)}):`,
-        options: [
-          { value: "bun", label: "Bun" },
-          { value: "npm", label: "NPM" },
-          { value: "pnpm", label: "PNPM" },
-          { value: "yarn", label: "Yarn" },
-        ],
-        initialValue: detectedPM
-      }),
+    // Show detected info
+    console.log(c.info("\\nDetected:"));
+    console.log(`  Framework: ${c.bold(context.framework)}`);
+    console.log(`  Language: ${c.bold(context.language)}`);
+    console.log(`  Package Manager: ${c.bold(context.packageManager)}`);
 
-      entryPoint: () => p.text({
-        message: "Where is your main application entry point located?",
-        placeholder: defaultEntry,
-        defaultValue: defaultEntry
-      }),
+    // Framework confirmation
+    const detectedFw = detectFramework(cwd);
+    if (!detectedFw) {
+      const confirmFw = await p.confirm({
+        message: `Framework "${context.framework}" detected. Is this correct?`,
+        initialValue: true,
+      });
+      if (!confirmFw || p.isCancel(confirmFw)) {
+        p.cancel("Please specify framework manually or check your dependencies");
+        return;
+      }
+    }
 
-      databaseEngine: () => p.select({
-        message: "Which core Database engine are you running?",
-        options: [
-          { value: "postgresql", label: "PostgreSQL" },
-          { value: "mongodb", label: "MongoDB" },
-          { value: "mysql", label: "MySQL" },
-          { value: "sqlite", label: "SQLite" },
-          { value: "none", label: "No Database Engine" },
-        ]
-      }),
+    // Run health checks
+    s.start("Running health checks...");
+    const checks = runHealthChecks(context);
+    s.stop("Health checks complete");
+    printHealthChecks(checks);
 
-      upgradeEnv: () => p.confirm({
-        message: "Would you like Bliss to configure a centralized, type-safe environment loader configuration?",
-        initialValue: true
-      })
-    });
+    // Create config
+    const config = createConfig(context.framework, context.language);
+    saveConfig(config, cwd);
 
-    // ==========================================
-    // 3. COMPILE DATA AND WRITE SCHEMA
-    // ==========================================
-    
-    // Dynamically align output directories with the user's project layout
-    const utilsPath = baseDir ? `${baseDir}/utils` : "utils";
-    const envConfigPath = projectSetup.upgradeEnv
-      ? (baseDir ? `${baseDir}/configurations/env.${extension}` : `configurations/env.${extension}`)
-      : ".env";
-
-    const blissConfig = {
-      $schema: "https://bliss.dev/schema.json",
-      language: isTypeScript ? "typescript" : "javascript",
-      packageManager: projectSetup.packageManager,
-      architecture: {
-        framework: projectSetup.framework,
-        orm: detectedORM,
-        databaseEngine: projectSetup.databaseEngine
-      },
-      paths: {
-        entryPoint: projectSetup.entryPoint,
-        utilsDir: utilsPath,
-        envConfig: envConfigPath
-      },
-      upgrades: {
-        centralizedEnv: projectSetup.upgradeEnv,
-      },
-      modulesInstalled: []
-    };
-
-    const targetPath = join(process.cwd(), "bliss.json");
-    await writeFile(targetPath, JSON.stringify(blissConfig, null, 2), "utf-8");
-
-    p.outro(yocto.green("✔ bliss.json generated with perfect structural insights!"));
-  }
+    p.outro(c.success("✨ Project configured!"));
+    console.log(c.dim("\\n  Run 'bliss add <module>' to add features\\n"));
+  },
 });

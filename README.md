@@ -1,22 +1,18 @@
-# Bliss
+# Bliss CLI
 
 **The automated backend architect for your Node.js/Bun projects.**
 
-Bliss is a CLI tool designed to take the friction out of setting up professional-grade backend infrastructure. Instead of manually installing and configuring loggers, environment loaders, or error handlers, Bliss surgically injects them into your project in seconds.
+Bliss is a CLI tool that scaffolds and enhances backend projects with surgical precision. Create new projects, inject modules, and deploy — all from one command.
 
-## Why Bliss?
+## Features
 
-Setting up a new project is repetitive. Bliss does the "boring" work for you:
+- **Project Scaffolding** — `bliss create` generates complete Express/Fastify/Hono/etc. projects with TypeScript or JavaScript
+- **Module Injection** — `bliss add` surgically injects features (logger, auth, error handling) without breaking existing code
+- **Health Checks** — `bliss doctor` diagnoses your project setup
+- **Deployment Config** — `bliss deploy` generates Docker, Fly.io, Render, or Vercel configs
+- **Git Helpers** — `bliss git` shortcuts for common git operations
 
-- **Surgical Injection**: Modifies your `index.ts` without breaking your existing code.
-- **Platform Agnostic**: Works seamlessly across Windows, macOS, and Linux.
-- **Safety First**: Smart detection prevents double-installation and warns you before making changes.
-
-## Quick Start
-
-### 1. Installation
-
-Install Bliss globally via npm or bun:
+## Installation
 
 ```bash
 # Using npm
@@ -26,35 +22,68 @@ npm install -g @mtg9ing/bliss
 bun add -g @mtg9ing/bliss
 ```
 
-### 2. Usage
+## Quick Start
 
-Navigate to your project folder and run:
-
+### Create a new project
 ```bash
+bliss create my-api
+# Interactive prompts for framework, language, features
+```
+
+### Configure an existing project
+```bash
+cd my-existing-project
 bliss init
 ```
 
-Once initialized, you can add powerful architectural layers to your app:
-
+### Add a module
 ```bash
-bliss boost
+bliss add logger    # Structured logging
+bliss add auth      # Authentication
+bliss add errors    # Error handling
 ```
 
-## How It Works
+### Check project health
+```bash
+bliss doctor
+```
 
-Bliss works by analyzing your project structure and performing "surgical injections":
+### Generate deployment config
+```bash
+bliss deploy        # Choose: docker, fly, render, vercel
+```
 
-1. **Detection**: Scans for your framework (Express, Fastify, etc.).
-2. **Injection**: Safely appends necessary imports and middleware to your entry point.
-3. **Verification**: Verifies package installation to ensure your project remains stable and dependency-compliant.
+## Commands
 
-## Contribution
+| Command | Description | Alias |
+|---------|-------------|-------|
+| `bliss create <name>` | Scaffold a new project | — |
+| `bliss init` | Configure existing project | — |
+| `bliss add <module>` | Install a module | `boost`, `install` |
+| `bliss remove <module>` | Remove a module | `uninstall` |
+| `bliss list` | List modules | `ls` |
+| `bliss update <module>` | Update a module | — |
+| `bliss doctor` | Health checks | `check` |
+| `bliss deploy` | Generate deployment config | — |
+| `bliss git <action>` | Git helpers | — |
+| `bliss help` | Show help | `h` |
 
-Bliss is open to contributions! Whether you want to add a new template, suggest a feature, or improve the documentation, we welcome your help.
+## Requirements
 
-- **Submit an Issue**: Found a bug or have a feature idea? Open an issue.
-- **Pull Requests**: We welcome PRs. Please ensure your code follows the existing style and includes tests.
-- **Community**: Join the discussion and help us make backend setup obsolete!
+- [Bun](https://bun.sh/) >= 1.0.0
+- Node.js >= 18 (for running generated projects)
+
+## Contributing
+
+Contributions welcome!
+
+- **Issues**: Bug reports and feature requests
+- **PRs**: Follow existing code style, include tests
+- **Community**: Help make backend setup obsolete
+
+## License
+
+MIT — see [LICENSE](./LICENSE)
 
 ---
 

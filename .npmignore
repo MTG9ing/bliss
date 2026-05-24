@@ -1,7 +1,0 @@
-# Ignore source files and dev configurations
-src/
-bun.lock
-tsconfig.json
-.github/
-docs/
-# Keep only the compiled distribution and meta files

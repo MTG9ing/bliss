@@ -5,15 +5,17 @@ node_modules
 out
 dist
 *.tgz
-
+/docs/backup
+main.py
 # code coverage
 coverage
 *.lcov
-
+src/templates/bundle.ts
+src/modules/bundle.ts
 # logs
 logs
-_.log
-report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+*.log
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # dotenv environment variable files
 .env

@@ -1,0 +1,32 @@
+import express from "express";
+{{#if (eq language "typescript")}}
+import type { Request, Response, NextFunction } from "express";
+{{/if}}
+import { routes } from "./routes.js";
+
+const app = express();
+const PORT = process.env.PORT || {{port}};
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use("/api", routes);
+
+app.get("/health", (req{{#if (eq language "typescript")}}: Request{{/if}}, res{{#if (eq language "typescript")}}: Response{{/if}}) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.use((req{{#if (eq language "typescript")}}: Request{{/if}}, res{{#if (eq language "typescript")}}: Response{{/if}}) => {
+  res.status(404).json({ success: false, error: "Not found" });
+});
+
+app.use((err{{#if (eq language "typescript")}}: Error{{/if}}, req{{#if (eq language "typescript")}}: Request{{/if}}, res{{#if (eq language "typescript")}}: Response{{/if}}, next{{#if (eq language "typescript")}}: NextFunction{{/if}}) => {
+  console.error(err);
+  res.status(500).json({ success: false, error: "Internal server error" });
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
+
+export default app;

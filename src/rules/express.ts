@@ -1,13 +1,29 @@
-export interface InjectionRule {
-  targetFile: string;       // The file we need to modify (e.g., "src/index.ts" or "server.ts")
-  anchor: string;           // The string we search for to know where to inject
-  injectionType: "before" | "after";
+import type { FrameworkMeta } from "../types/framework.ts";
+
+export const expressMeta: FrameworkMeta = {
+  name: "express",
+  displayName: "Express.js",
+  packageName: "express",
+  language: "javascript",
+  hasRouter: true,
+  defaultPort: 3000,
+};
+
+export function detectExpress(packageJson: { dependencies?: Record<string, string> }): boolean {
+  return "express" in (packageJson.dependencies || {});
 }
 
-export const expressRules: Record<string, InjectionRule> = {
-  logger: {
-    targetFile: "src/index.ts", 
-    anchor: "const app = express()", // We look for where they instantiate Express
-    injectionType: "after",          // We want to inject our middleware right after it
-  },
-};
+export const expressFiles = [
+  "src/index.ts",
+  "src/index.js",
+  "src/app.ts",
+  "src/app.js",
+  "src/server.ts",
+  "src/server.js",
+];
+
+export const expressPatterns = [
+  /express\(\)/,
+  /from ["']express["']/,
+  /require\(["']express["']\)/,
+];
