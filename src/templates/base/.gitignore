@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+*.lockb
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Output
+dist/
+out/
+*.tgz
+
+# Coverage
+coverage/
+*.lcov
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Caches
+.eslintcache
+.cache/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Bliss
+.bliss/logs/
+.bliss/backups/

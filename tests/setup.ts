@@ -34,3 +34,29 @@ export function createTsConfig(dir: string): void {
     JSON.stringify({ compilerOptions: { target: "ES2022" } }, null, 2)
   );
 }
+
+export function createBlissConfig(dir: string, overrides: Record<string, unknown> = {}): void {
+  const blissDir = join(dir, ".bliss");
+  mkdirSync(blissDir, { recursive: true });  // ← ADD THIS
+  
+  writeFileSync(
+    join(blissDir, "config.json"),
+    JSON.stringify(
+      {
+        version: "2.1.0",
+        project: {
+          name: "test",
+          type: "backend",
+          framework: "express",
+          language: "typescript",
+          entryFile: "src/index.ts",
+        },
+        packageManager: "bun",
+        features: [],
+        ...overrides,
+      },
+      null,
+      2
+    )
+  );
+}

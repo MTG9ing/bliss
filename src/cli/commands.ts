@@ -1,26 +1,30 @@
 import type { CommandDef } from "citty";
 
-// Command registry - add new commands here
+// Command registry — lazy load for fast startup
 const commandImports = {
   create: () => import("../commands/create.ts").then((r) => r.default),
   init: () => import("../commands/init.ts").then((r) => r.default),
   add: () => import("../commands/add.ts").then((r) => r.default),
   remove: () => import("../commands/remove.ts").then((r) => r.default),
-  list: () => import("../commands/list.ts").then((r) => r.default),
-  update: () => import("../commands/update.ts").then((r) => r.default),
   doctor: () => import("../commands/doctor.ts").then((r) => r.default),
-  deploy: () => import("../commands/deploy.ts").then((r) => r.default),
   git: () => import("../commands/git.ts").then((r) => r.default),
+  logs: () => import("../commands/logs.ts").then((r) => r.default),
   help: () => import("../commands/help.ts").then((r) => r.default),
 };
 
-// Aliases for backward compatibility
+// Aliases
 const aliases: Record<string, string> = {
-  boost: "add",
+  new: "create",
+  scaffold: "create",
+  setup: "init",
   install: "add",
+  boost: "add",
   uninstall: "remove",
-  ls: "list",
   check: "doctor",
+  diagnose: "doctor",
+  gh: "git",
+  activity: "logs",
+  history: "logs",
   h: "help",
 };
 
@@ -31,7 +35,6 @@ export function registerCommands(): Record<string, () => Promise<CommandDef>> {
     commands[name] = importer;
   }
 
-  // Register aliases
   for (const [alias, target] of Object.entries(aliases)) {
     commands[alias] = commandImports[target as keyof typeof commandImports];
   }
@@ -46,14 +49,12 @@ export function getCommandList(): string[] {
 export function getCommandDescription(name: string): string {
   const descriptions: Record<string, string> = {
     create: "Scaffold a new project from template",
-    init: "Analyze and configure an existing project",
-    add: "Inject a module into your project",
-    remove: "Remove an injected module",
-    list: "List installed and available modules",
-    update: "Update a module to latest version",
+    init: "Configure or bootstrap current directory",
+    add: "Inject a feature module into your project",
+    remove: "Remove an injected feature module",
     doctor: "Run health checks on your project",
-    deploy: "Generate deployment configuration",
     git: "Git and GitHub helpers",
+    logs: "View activity history",
     help: "Show help for commands",
   };
   return descriptions[name] || "No description available";

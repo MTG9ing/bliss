@@ -1,90 +1,153 @@
 import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
-import { buildContext } from "../core/detector.ts";
-import { hasConfig } from "../core/config.ts";
-import { ModuleManager } from "../modules/manager.ts";
+import { buildContext, detectEntryFile, validateEntryFile } from "../core/detector.ts";
+import { hasConfig, loadConfig, addFeature as addFeatureToConfig, updateEntryFile } from "../core/config.ts";
+import { installPackages } from "../core/installer.ts";
+import { copyFeatureTemplate } from "../templates/engine.ts";
+import { injectFeature, getManualInstructions } from "../core/injector.ts";
+import { logger } from "../core/logger.ts";
 import { c } from "../utils/colors.ts";
+import { join } from "node:path";
+
+const AVAILABLE_FEATURES = [
+  { value: "logger", label: "Logger", hint: "Structured logging with Pino" },
+  { value: "errors", label: "Error Handler", hint: "Centralized error handling" },
+  { value: "env", label: "Env Config", hint: "Environment variables with Zod" },
+  { value: "cors", label: "CORS", hint: "Cross-origin requests" },
+  { value: "security", label: "Security", hint: "Helmet, rate-limiting, sanitization" },
+  { value: "performance", label: "Performance", hint: "Compression, caching" },
+  { value: "auth", label: "Auth", hint: "JWT authentication" },
+];
 
 export default defineCommand({
   meta: {
     name: "add",
-    description: "Inject a module into your project",
+    description: "Inject a feature module into your project",
   },
   args: {
-    module: {
+    feature: {
       type: "positional",
-      description: "Module name or path",
+      description: "Feature name",
       required: false,
     },
   },
   async run({ args }) {
-    p.intro(c.bold("➕ Bliss Add — Install a module"));
+    p.intro(c.bold("➕ Bliss Add — Install a feature"));
 
     const cwd = process.cwd();
+
     if (!hasConfig(cwd)) {
-      p.cancel("No bliss.config.json found. Run 'bliss init' first.");
+      p.cancel("No bliss config found. Run 'bliss init' first.");
       return;
     }
 
-    const manager = new ModuleManager();
-    const context = buildContext(cwd);
+    const config = loadConfig(cwd);
+    if (!config) {
+      p.cancel("Failed to load config");
+      return;
+    }
 
-    // If no module specified, show interactive list
-    let moduleId = args.module;
-    if (!moduleId) {
-      const available = await manager.listAvailable();
-      const installed = manager.listInstalled(context);
-
-      if (available.length === 0) {
-        p.cancel("No modules available. Check your installation.");
-        return;
-      }
-
-      const options = available.map((m) => ({
-        value: m.id,
-        label: `${m.name} ${installed.includes(m.id) ? "(installed)" : ""}`,
-        hint: m.description,
+    // Select feature
+    let featureId = args.feature;
+    if (!featureId) {
+      const installed = config.features;
+      const options = AVAILABLE_FEATURES.map((f) => ({
+        ...f,
+        label: installed.includes(f.value) ? `${f.label} (installed)` : f.label,
       }));
 
-      moduleId = (await p.select({
-        message: "Which module to install?",
+      featureId = (await p.select({
+        message: "Which feature to add?",
         options,
       })) as string;
     }
 
-    if (p.isCancel(moduleId)) {
+    if (p.isCancel(featureId)) {
       p.cancel("Cancelled");
       return;
     }
 
     // Check if already installed
-    const installed = manager.listInstalled(context);
-    if (installed.includes(moduleId)) {
+    if (config.features.includes(featureId)) {
       const reinstall = await p.confirm({
-        message: `Module "${moduleId}" is already installed. Reinstall?`,
+        message: `"${featureId}" is already installed. Reinstall?`,
         initialValue: false,
       });
-      if (!reinstall || p.isCancel(reinstall)) {
+      if (!reinstall) {
         p.cancel("Skipped");
         return;
       }
     }
 
     const s = p.spinner();
-    s.start(`Installing ${moduleId}...`);
+    s.start(`Adding ${featureId}...`);
 
-    const result = await manager.install(moduleId, context);
-
-    if (result.success) {
-      s.stop(c.success(`Module "${moduleId}" installed`));
-      if (result.messages.length > 0) {
-        for (const msg of result.messages) console.log(c.dim(`  → ${msg}`));
-      }
-    } else {
-      s.stop(c.error(`Failed to install "${moduleId}"`));
-      for (const err of result.errors) console.log(c.error(`  ✖ ${err}`));
+    // 1. Copy template files
+    const copyOk = copyFeatureTemplate(featureId, cwd, config.project.language);
+    if (!copyOk) {
+      s.stop(c.error("Failed"));
+      p.cancel(`Failed to copy ${featureId} files`);
+      return;
     }
 
-    p.outro(result.success ? c.success("Done!") : c.error("Failed"));
+    // 2. Install dependencies
+    const framework = config.project.framework;
+    const pm = config.packageManager;
+
+    const featureDeps: Record<string, { runtime: string[]; dev: string[] }> = {
+      logger: { runtime: ["pino", "pino-pretty"], dev: ["@types/pino"] },
+      errors: { runtime: [], dev: [] },
+      env: { runtime: ["dotenv", "zod"], dev: [] },
+      cors: { runtime: framework === "fastify" ? ["@fastify/cors"] : ["cors"], dev: [] },
+      security: { runtime: ["helmet", "express-rate-limit", "express-mongo-sanitize", "hpp"], dev: [] },
+      performance: { runtime: ["compression"], dev: [] },
+      auth: { runtime: ["jsonwebtoken", "bcryptjs"], dev: ["@types/jsonwebtoken", "@types/bcryptjs"] },
+    };
+
+    const deps = featureDeps[featureId];
+    if (deps) {
+      if (deps.runtime.length > 0) installPackages(deps.runtime, pm, cwd, false);
+      if (deps.dev.length > 0) installPackages(deps.dev, pm, cwd, true);
+    }
+
+    // 3. Auto-inject into entry file
+    let entryFile = config.project.entryFile;
+    const entryPath = join(cwd, entryFile);
+
+    // Validate entry file exists and matches framework
+    if (!validateEntryFile(entryPath, framework)) {
+      // Try to detect entry file again
+      const detected = detectEntryFile(cwd, framework);
+      if (detected) {
+        entryFile = detected;
+        updateEntryFile(entryFile, cwd);
+      } else {
+        // Ask user
+        s.stop(c.warning("Entry file not found"));
+        const manualEntry = (await p.text({
+          message: "Entry file path? (e.g., src/app.ts)",
+          defaultValue: "src/index.ts",
+        })) as string;
+
+        if (!p.isCancel(manualEntry)) {
+          entryFile = manualEntry;
+          updateEntryFile(entryFile, cwd);
+        }
+      }
+    }
+
+    const injectResult = injectFeature(join(cwd, entryFile), featureId, framework);
+
+    // 4. Update config
+    addFeatureToConfig(featureId, cwd);
+
+    s.stop(c.success(`Feature "${featureId}" added`));
+
+    if (injectResult.manualInstructions) {
+      console.log(c.yellow("\n⚠ Auto-injection failed. Add manually:\n"));
+      console.log(c.dim(injectResult.manualInstructions));
+    }
+
+    p.outro(c.success("Done!"));
   },
 });

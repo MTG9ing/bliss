@@ -1,76 +1,161 @@
-import { BlissConfigSchema, type BlissConfig, type ProjectContext } from "../types/index.ts";
-import { readJson, writeJson, fileExists } from "../utils/fs.ts";
-import { blissConfigPath } from "../utils/path.ts";
+import { BlissConfigSchema, type BlissConfig, type Framework, type Language, type PackageManager } from "../types/index.ts";
+import { readJson, writeJson, fileExists, ensureDir } from "../utils/fs.ts";
+import { blissConfigPath, blissDir } from "../utils/path.ts";
 import { logger } from "./logger.ts";
 
+/**
+ * Load and validate config from .bliss/config.json
+ */
 export function loadConfig(cwd = process.cwd()): BlissConfig | null {
   const path = blissConfigPath(cwd);
-  const data = readJson<Record<string, unknown>>(path);
-  if (!data) {
-    console.log(`[loadConfig] readJson returned null for ${path}`);
+  if (!fileExists(path)) {
+    logger.debug(`No config found at ${path}`);
     return null;
   }
 
-  console.log(`[loadConfig] read data:`, JSON.stringify(data).slice(0, 200));
+  const data = readJson<Record<string, unknown>>(path);
+  if (!data) {
+    logger.warn(`Failed to read config at ${path}`);
+    return null;
+  }
 
   const result = BlissConfigSchema.safeParse(data);
   if (!result.success) {
-    console.log(`[loadConfig] Zod error:`, result.error.message);
-    console.log(`[loadConfig] Zod issues:`, JSON.stringify(result.error.issues, null, 2));
-    logger.error("Invalid bliss.config.json");
+    logger.error(`Invalid config at ${path}: ${result.error.message}`);
     return null;
   }
+
   return result.data;
 }
 
+/**
+ * Save config to .bliss/config.json
+ */
 export function saveConfig(config: BlissConfig, cwd = process.cwd()): boolean {
+  ensureDir(blissDir(cwd));
   const path = blissConfigPath(cwd);
   const updated = {
     ...config,
     updatedAt: new Date().toISOString(),
   };
+
   const ok = writeJson(path, updated);
-  if (ok) logger.success(`Saved config to ${path}`);
+  if (ok) {
+    logger.success(`Saved config to ${path}`);
+    logger.debug(`Config content: ${JSON.stringify(updated, null, 2)}`);
+  } else {
+    logger.error(`Failed to save config to ${path}`);
+  }
   return ok;
 }
 
-export function createConfig(
-  framework: ProjectContext["framework"],
-  language: ProjectContext["language"],
-  overrides: Partial<BlissConfig> = {},
-): BlissConfig {
-  return BlissConfigSchema.parse({
-    version: "2.0.0",
-    framework,
-    language,
-    modules: [],
-    port: 3000,
-    features: {
-      eslint: false,
-      prettier: false,
-      docker: false,
-      tests: false,
-    },
-    createdAt: new Date().toISOString(),
-    ...overrides,
-  });
-}
-
+/**
+ * Check if config exists
+ */
 export function hasConfig(cwd = process.cwd()): boolean {
   return fileExists(blissConfigPath(cwd));
 }
 
-export function addModuleToConfig(moduleId: string, cwd = process.cwd()): boolean {
+/**
+ * Create new config with defaults
+ */
+export function createConfig(
+  name: string,
+  type: BlissConfig["project"]["type"],
+  framework: Framework,
+  language: Language,
+  packageManager: PackageManager,
+  entryFile = "src/index.ts"
+): BlissConfig {
+  return BlissConfigSchema.parse({
+    version: "2.1.0",
+    project: {
+      name,
+      type,
+      framework,
+      language,
+      structure: "standard",
+      entryFile,
+    },
+    packageManager,
+    features: [],
+    git: {
+      initialized: false,
+    },
+    github: {
+      authenticated: false,
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+/**
+ * Add feature to config
+ */
+export function addFeature(featureId: string, cwd = process.cwd()): boolean {
   const config = loadConfig(cwd);
   if (!config) return false;
-  if (config.modules.includes(moduleId)) return true;
-  config.modules.push(moduleId);
+  if (config.features.includes(featureId)) return true;
+
+  config.features.push(featureId);
   return saveConfig(config, cwd);
 }
 
-export function removeModuleFromConfig(moduleId: string, cwd = process.cwd()): boolean {
+/**
+ * Remove feature from config
+ */
+export function removeFeature(featureId: string, cwd = process.cwd()): boolean {
   const config = loadConfig(cwd);
   if (!config) return false;
-  config.modules = config.modules.filter((m) => m !== moduleId);
+
+  config.features = config.features.filter((f) => f !== featureId);
   return saveConfig(config, cwd);
+}
+
+/**
+ * Update entry file in config
+ */
+export function updateEntryFile(entryFile: string, cwd = process.cwd()): boolean {
+  const config = loadConfig(cwd);
+  if (!config) return false;
+
+  config.project.entryFile = entryFile;
+  return saveConfig(config, cwd);
+}
+
+/**
+ * Migrate config from older version
+ * Future-proofing for v2.2, v3.0, etc.
+ */
+export function migrateConfig(data: Record<string, unknown>): BlissConfig | null {
+  const version = (data.version as string) || "unknown";
+
+  // v2.0 -> v2.1 migration
+  if (version.startsWith("2.0")) {
+    logger.step("Migrating config from v2.0 to v2.1");
+    // Add new fields with defaults
+    const migrated = {
+      ...data,
+      version: "2.1.0",
+      project: {
+        structure: "standard",
+        ...((data.project as Record<string, unknown>) || {}),
+      },
+      git: {
+        initialized: false,
+        ...(data.git || {}),
+      },
+      github: {
+        authenticated: false,
+        ...(data.github || {}),
+      },
+    };
+    const result = BlissConfigSchema.safeParse(migrated);
+    return result.success ? result.data : null;
+  }
+
+  // Current version
+  const result = BlissConfigSchema.safeParse(data);
+  return result.success ? result.data : null;
 }

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createTempDir, cleanupTempDir, createPackageJson, createTsConfig } from "./setup.ts";
-import { buildContext, detectFramework, detectLanguage } from "../src/core/detector.ts";
+import { buildContext, detectFramework, detectLanguage, detectPackageManager } from "../src/core/detector.ts";
 import { createConfig, saveConfig, loadConfig, hasConfig } from "../src/core/config.ts";
 
 describe("init command", () => {
@@ -18,7 +18,7 @@ describe("init command", () => {
     cleanupTempDir(tempDir);
   });
 
-  it("should detect Express framework from cwd", () => {
+  it("should detect Express framework", () => {
     expect(detectFramework(tempDir)).toBe("express");
   });
 
@@ -26,28 +26,25 @@ describe("init command", () => {
     expect(detectLanguage(tempDir)).toBe("typescript");
   });
 
+  it("should detect package manager", () => {
+    expect(detectPackageManager(tempDir)).toBe("npm"); // default when no lock file
+  });
+
   it("should create and load config", () => {
-    const config = createConfig("express", "typescript");
+    const config = createConfig("test-app", "backend", "express", "typescript", "bun");
     saveConfig(config, tempDir);
 
     expect(hasConfig(tempDir)).toBe(true);
 
-    // Debug: print what's in the file
-    const configPath = join(tempDir, "bliss.config.json");
-    const rawContent = readFileSync(configPath, "utf-8");
-    console.log("Config file content:", rawContent);
-
     const loaded = loadConfig(tempDir);
-    console.log("Loaded config:", loaded);
     expect(loaded).not.toBeNull();
-    expect(loaded?.framework).toBe("express");
-    expect(loaded?.language).toBe("typescript");
+    expect(loaded?.project.framework).toBe("express");
+    expect(loaded?.project.language).toBe("typescript");
   });
 
   it("should build project context", () => {
     const context = buildContext(tempDir);
     expect(context.framework).toBe("express");
     expect(context.language).toBe("typescript");
-    expect(context.hasTypeScript).toBe(true);
   });
 });

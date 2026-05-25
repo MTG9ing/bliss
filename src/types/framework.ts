@@ -1,27 +1,27 @@
-export type Framework =
-  | "express"
-  | "fastify"
-  | "hono"
-  | "elysia"
-  | "koa"
-  | "vanilla";
+/**
+ * Framework definitions — single source of truth
+ * Add new frameworks here and create templates/[framework]/ directory
+ */
 
-export const FRAMEWORKS: Framework[] = [
-  "express",
-  "fastify",
-  "hono",
-  "elysia",
-  "koa",
-  "vanilla",
-];
+export type Framework = "express" | "fastify" | "vanilla";
+
+export const FRAMEWORKS: Framework[] = ["express", "fastify", "vanilla"];
+
+export type Language = "typescript" | "javascript";
+
+export type PackageManager = "npm" | "bun" | "pnpm";
+
+export type ProjectType = "starter" | "backend" | "library" | "frontend";
+
+export type ProjectStructure = "standard" | "mvc" | "microservices" | "oop" | "functional" | "hexagonal";
 
 export interface FrameworkMeta {
   name: Framework;
   displayName: string;
   packageName: string;
-  language: "typescript" | "javascript";
-  hasRouter: boolean;
-  defaultPort: number;
+  entryFiles: string[];
+  port: number;
+  language: Language; // Primary language, project can override
 }
 
 export const FRAMEWORK_META: Record<Framework, FrameworkMeta> = {
@@ -29,48 +29,31 @@ export const FRAMEWORK_META: Record<Framework, FrameworkMeta> = {
     name: "express",
     displayName: "Express.js",
     packageName: "express",
+    entryFiles: ["src/index.ts", "src/index.js", "src/app.ts", "src/app.js", "src/server.ts", "src/server.js"],
+    port: 3000,
     language: "javascript",
-    hasRouter: true,
-    defaultPort: 3000,
   },
   fastify: {
     name: "fastify",
     displayName: "Fastify",
     packageName: "fastify",
+    entryFiles: ["src/index.ts", "src/index.js", "src/app.ts", "src/app.js"],
+    port: 3000,
     language: "javascript",
-    hasRouter: true,
-    defaultPort: 3000,
-  },
-  hono: {
-    name: "hono",
-    displayName: "Hono",
-    packageName: "hono",
-    language: "typescript",
-    hasRouter: true,
-    defaultPort: 3000,
-  },
-  elysia: {
-    name: "elysia",
-    displayName: "Elysia",
-    packageName: "elysia",
-    language: "typescript",
-    hasRouter: true,
-    defaultPort: 3000,
-  },
-  koa: {
-    name: "koa",
-    displayName: "Koa",
-    packageName: "koa",
-    language: "javascript",
-    hasRouter: true,
-    defaultPort: 3000,
   },
   vanilla: {
     name: "vanilla",
     displayName: "Vanilla Node.js",
     packageName: "",
+    entryFiles: ["src/index.ts", "src/index.js", "index.ts", "index.js"],
+    port: 3000,
     language: "javascript",
-    hasRouter: false,
-    defaultPort: 3000,
   },
+};
+
+// Detection patterns for entry file validation
+export const FRAMEWORK_PATTERNS: Record<Framework, RegExp[]> = {
+  express: [/express\(\)/, /from\s+['"]express['"]/, /require\(['"]express['"]\)/],
+  fastify: [/fastify\(\)/, /from\s+['"]fastify['"]/, /Fastify\(/],
+  vanilla: [/createServer/, /from\s+['"]node:http['"]/, /require\(['"]http['"]\)/],
 };

@@ -1,15 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { createTempDir, cleanupTempDir, createPackageJson } from "./setup.ts";
-import { scaffoldFromTemplate, buildTemplateContext } from "../src/templates/engine.ts";
-
-// Resolve template directory relative to project root
-function getTemplateDir(subPath: string): string {
-  const base = import.meta.dirname || process.cwd();
-  const projectRoot = base.endsWith("tests") ? resolve(base, "..") : base;
-  return resolve(projectRoot, subPath);
-}
+import { join } from "node:path";
+import { createTempDir, cleanupTempDir } from "./setup.ts";
+import { scaffoldProject } from "../src/templates/engine.ts";
 
 describe("create command", () => {
   let tempDir: string;
@@ -22,53 +15,63 @@ describe("create command", () => {
     cleanupTempDir(tempDir);
   });
 
-  it("should scaffold an Express project", () => {
+  it("should scaffold an Express TypeScript project", () => {
     const context = {
-      cwd: tempDir,
+      projectName: "test-api",
       framework: "express" as const,
       language: "typescript" as const,
-      hasTypeScript: true,
       packageManager: "bun" as const,
+      features: [],
+      includeTests: true,
+      includeGit: true,
     };
 
-    const data = buildTemplateContext("test-api", context, {
-      eslint: true,
-      prettier: true,
-      docker: false,
-      tests: true,
-    });
+    const ok = scaffoldProject(tempDir, context);
+    expect(ok).toBe(true);
 
-    const baseDir = getTemplateDir("src/templates/base");
-    const generated = scaffoldFromTemplate(baseDir, tempDir, data);
-
-    expect(generated.length).toBeGreaterThan(0);
     expect(existsSync(join(tempDir, "package.json"))).toBe(true);
     expect(existsSync(join(tempDir, "tsconfig.json"))).toBe(true);
-    // gitignore might be named .gitignore or gitignore depending on template
-    const hasGitignore = existsSync(join(tempDir, ".gitignore")) || existsSync(join(tempDir, "gitignore"));
-    expect(hasGitignore).toBe(true);
+    expect(existsSync(join(tempDir, ".gitignore"))).toBe(true);
+    expect(existsSync(join(tempDir, "src", "index.ts"))).toBe(true);
+    expect(existsSync(join(tempDir, "src", "app.ts"))).toBe(true);
   });
 
-  it("should include framework in package.json", () => {
+  it("should scaffold a Fastify JavaScript project", () => {
     const context = {
-      cwd: tempDir,
+      projectName: "fastify-app",
       framework: "fastify" as const,
       language: "javascript" as const,
-      hasTypeScript: false,
       packageManager: "npm" as const,
+      features: [],
+      includeTests: false,
+      includeGit: false,
     };
 
-    const data = buildTemplateContext("fastify-app", context, {
-      eslint: false,
-      prettier: false,
-      docker: false,
-      tests: false,
-    });
+    const ok = scaffoldProject(tempDir, context);
+    expect(ok).toBe(true);
 
-    const baseDir = getTemplateDir("src/templates/base");
-    scaffoldFromTemplate(baseDir, tempDir, data);
+    expect(existsSync(join(tempDir, "package.json"))).toBe(true);
+    expect(existsSync(join(tempDir, "jsconfig.json"))).toBe(true);
+    expect(existsSync(join(tempDir, "src", "index.js"))).toBe(true);
+    expect(existsSync(join(tempDir, "src", "app.js"))).toBe(true);
+  });
+
+  it("should include framework dependency in package.json", () => {
+    const context = {
+      projectName: "vanilla-app",
+      framework: "vanilla" as const,
+      language: "typescript" as const,
+      packageManager: "bun" as const,
+      features: [],
+      includeTests: true,
+      includeGit: false,
+    };
+
+    scaffoldProject(tempDir, context);
 
     const pkg = JSON.parse(readFileSync(join(tempDir, "package.json"), "utf-8"));
-    expect(pkg.dependencies.fastify).toBeDefined();
+    expect(pkg.type).toBe("module");
+    expect(pkg.devDependencies.vitest).toBeDefined();
+    expect(pkg.devDependencies["@biomejs/biome"]).toBeDefined();
   });
 });

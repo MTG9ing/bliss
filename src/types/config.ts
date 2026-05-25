@@ -1,37 +1,41 @@
 import { z } from "zod";
-import { FRAMEWORKS, type Framework } from "./framework.ts";
+import { FRAMEWORKS, type Framework, type Language, type PackageManager, type ProjectType, type ProjectStructure } from "./framework.ts";
 
-// Convert array to tuple for z.enum (Zod v4 requirement)
-const FRAMEWORK_TUPLE = [
-  FRAMEWORKS[0],
-  ...FRAMEWORKS.slice(1),
-] as [Framework, ...Framework[]];
+// Zod v4: use z.enum with array cast to tuple
+const FrameworkEnum = z.enum(FRAMEWORKS as [Framework, ...Framework[]]);
 
 export const BlissConfigSchema = z.object({
-  version: z.string().default("2.0.0"),
-  framework: z.enum(FRAMEWORK_TUPLE),
-  language: z.enum(["typescript", "javascript"]).default("typescript"),
-  modules: z.array(z.string()).default([]),
-  port: z.number().int().min(1).max(65535).default(3000),
-  features: z
+  version: z.string().default("2.1.0"),
+  project: z.object({
+    name: z.string().min(1),
+    type: z.enum(["starter", "backend", "library", "frontend"] as [ProjectType, ...ProjectType[]]),
+    framework: FrameworkEnum,
+    language: z.enum(["typescript", "javascript"] as [Language, ...Language[]]).default("typescript"),
+    structure: z.enum(["standard", "mvc", "microservices", "oop", "functional", "hexagonal"] as [ProjectStructure, ...ProjectStructure[]]).default("standard"),
+    entryFile: z.string().default("src/index.ts"),
+  }),
+  packageManager: z.enum(["npm", "bun", "pnpm"] as [PackageManager, ...PackageManager[]]).default("bun"),
+  features: z.array(z.string()).default([]),
+  git: z
     .object({
-      eslint: z.boolean().default(false),
-      prettier: z.boolean().default(false),
-      docker: z.boolean().default(false),
-      tests: z.boolean().default(false),
+      initialized: z.boolean().default(false),
+      remote: z.string().optional(),
+      url: z.string().optional(),
     })
     .default({}),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
+  github: z
+    .object({
+      username: z.string().optional(),
+      authenticated: z.boolean().default(false),
+    })
+    .default({}),
+  createdAt: z.string().datetime().optional(),
+  updatedAt: z.string().datetime().optional(),
 });
 
 export type BlissConfig = z.infer<typeof BlissConfigSchema>;
 
 export interface ProjectContext {
   cwd: string;
-  framework: Framework;
-  language: "typescript" | "javascript";
-  hasTypeScript: boolean;
-  packageManager: "npm" | "yarn" | "pnpm" | "bun";
-  config?: BlissConfig;
+  config: BlissConfig;
 }

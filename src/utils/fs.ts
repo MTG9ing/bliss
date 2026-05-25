@@ -1,11 +1,15 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
+
+/**
+ * Clean file operations — no console noise
+ * Return null/ false on failure, let caller decide logging
+ */
 
 export function readFile(path: string): string | null {
   try {
     return readFileSync(path, "utf-8");
-  } catch (err) {
-    console.error(`[readFile] Failed to read ${path}: ${(err as Error).message}`);
+  } catch {
     return null;
   }
 }
@@ -15,8 +19,7 @@ export function writeFile(path: string, content: string): boolean {
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, content, "utf-8");
     return true;
-  } catch (err) {
-    console.error(`[writeFile] Failed to write ${path}: ${(err as Error).message}`);
+  } catch {
     return false;
   }
 }
@@ -29,27 +32,50 @@ export function ensureDir(path: string): boolean {
   try {
     mkdirSync(path, { recursive: true });
     return true;
-  } catch (err) {
-    console.error(`[ensureDir] Failed to create ${path}: ${(err as Error).message}`);
+  } catch {
+    return false;
+  }
+}
+
+export function removeDir(path: string): boolean {
+  try {
+    rmSync(path, { recursive: true, force: true });
+    return true;
+  } catch {
     return false;
   }
 }
 
 export function readJson<T = unknown>(path: string): T | null {
   const content = readFile(path);
-  if (!content) {
-    console.error(`[readJson] readFile returned null for ${path}`);
-    return null;
-  }
+  if (!content) return null;
   try {
     return JSON.parse(content) as T;
-  } catch (err) {
-    console.error(`[readJson] JSON.parse failed for ${path}: ${(err as Error).message}`);
-    console.error(`[readJson] Content preview: ${content.slice(0, 100)}`);
+  } catch {
     return null;
   }
 }
 
 export function writeJson(path: string, data: unknown): boolean {
   return writeFile(path, JSON.stringify(data, null, 2) + "\n");
+}
+
+export function copyDir(src: string, dest: string): boolean {
+  try {
+    ensureDir(dest);
+    const entries = readdirSync(src, { withFileTypes: true });
+    for (const entry of entries) {
+      const srcPath = join(src, entry.name);
+      const destPath = join(dest, entry.name);
+      if (entry.isDirectory()) {
+        copyDir(srcPath, destPath);
+      } else {
+        const content = readFile(srcPath);
+        if (content) writeFile(destPath, content);
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }

@@ -1,7 +1,11 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.8.0/schema.json",
-  "organizeImports": {
-    "enabled": true
+  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   },
   "linter": {
     "enabled": true,
@@ -24,11 +28,11 @@
   "javascript": {
     "formatter": {
       "quoteStyle": "double",
-      "trailingComma": "all",
+      "trailingCommas": "all",
       "semicolons": "always"
     }
   },
   "files": {
-    "ignore": ["dist/", "node_modules/", "*.lock"]
+    "includes": ["src/**", "tests/**", "scripts/**", "!dist/**", "!node_modules/**", "!.bliss/**"]
   }
 }

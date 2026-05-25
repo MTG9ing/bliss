@@ -1,51 +1,53 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { createTempDir, cleanupTempDir, createPackageJson, createTsConfig } from "./setup.ts";
-import { buildContext } from "../src/core/detector.ts";
-import { createConfig, saveConfig } from "../src/core/config.ts";
-import { ModuleManager } from "../src/modules/manager.ts";
+import { createTempDir, cleanupTempDir, createBlissConfig } from "./setup.ts";
+import { copyFeatureTemplate } from "../src/templates/engine.ts";
+import { injectFeature } from "../src/core/injector.ts";
 
 describe("add command", () => {
   let tempDir: string;
-  let manager: ModuleManager;
 
   beforeEach(() => {
     tempDir = createTempDir("add-");
-    createPackageJson(tempDir, { express: "^4.18.0" });
-    createTsConfig(tempDir);
+    createBlissConfig(tempDir);
 
-    const config = createConfig("express", "typescript");
-    saveConfig(config, tempDir);
-
-    manager = new ModuleManager();
+    // Create minimal Express entry file
+    mkdirSync(join(tempDir, "src"), { recursive: true });
+    writeFileSync(
+      join(tempDir, "src", "index.ts"),
+      `import express from 'express';\nconst app = express();\napp.listen(3000);\n`
+    );
   });
 
   afterEach(() => {
     cleanupTempDir(tempDir);
   });
 
-  it("should list available modules", async () => {
-    const available = await manager.listAvailable();
-    expect(available.length).toBeGreaterThan(0);
-    expect(available.some((m) => m.id === "logger")).toBe(true);
+  it("should copy logger feature template", () => {
+    const ok = copyFeatureTemplate("logger", tempDir, "typescript");
+    expect(ok).toBe(true);
+    expect(existsSync(join(tempDir, "src", "lib", "logger.ts"))).toBe(true);
+    expect(existsSync(join(tempDir, "src", "middleware", "request-logger.ts"))).toBe(true);
   });
 
-  it("should resolve built-in module", async () => {
-    const instance = await manager.resolve("logger");
-    expect(instance).not.toBeNull();
-    expect(instance?.meta.id).toBe("logger");
-    expect(instance?.source).toBe("built-in");
+  it("should copy env feature template", () => {
+    const ok = copyFeatureTemplate("env", tempDir, "typescript");
+    expect(ok).toBe(true);
+    expect(existsSync(join(tempDir, "src", "config", "env.ts"))).toBe(true);
   });
 
-  it("should fail to resolve unknown module", async () => {
-    const instance = await manager.resolve("nonexistent");
-    expect(instance).toBeNull();
-  });
+  it("should inject logger into Express entry file", () => {
+    copyFeatureTemplate("logger", tempDir, "typescript");
 
-  it("should track installed modules", () => {
-    const context = buildContext(tempDir);
-    const installed = manager.listInstalled(context);
-    expect(Array.isArray(installed)).toBe(true);
+    const entryPath = join(tempDir, "src", "index.ts");
+    const result = injectFeature(entryPath, "logger", "express");
+
+    expect(result.success).toBe(true);
+    expect(result.modified.length).toBeGreaterThan(0);
+
+    const content = readFileSync(entryPath, "utf-8");
+    expect(content).toInclude("requestLogger");
+    expect(content).toInclude("import");
   });
 });

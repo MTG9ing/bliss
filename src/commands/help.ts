@@ -15,8 +15,7 @@ export default defineCommand({
   },
   run({ args }) {
     if (args.command) {
-      // Could show detailed help per command
-      console.log(`\\nHelp for: bliss ${args.command}\\n`);
+      console.log(`\nHelp for: bliss ${args.command}\n`);
       console.log("Run 'bliss --help' for general usage.");
     } else {
       console.log(generateHelp());
