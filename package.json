@@ -8,7 +8,7 @@
     "bliss": "dist/index.js"
   },
   "name": "@mtg9ing/bliss",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "module": "src/index.ts",
   "main": "dist/index.js",
   "type": "module",
