@@ -1,7 +1,7 @@
 import type { CommandDef } from "citty";
 
 // Command registry — lazy load for fast startup
-const commandImports = {
+const commandImports: Record<string, () => Promise<CommandDef>> = {
   create: () => import("../commands/create.ts").then((r) => r.default),
   init: () => import("../commands/init.ts").then((r) => r.default),
   add: () => import("../commands/add.ts").then((r) => r.default),
@@ -36,7 +36,7 @@ export function registerCommands(): Record<string, () => Promise<CommandDef>> {
   }
 
   for (const [alias, target] of Object.entries(aliases)) {
-    commands[alias] = commandImports[target as keyof typeof commandImports];
+    commands[alias] = commandImports[target];
   }
 
   return commands;

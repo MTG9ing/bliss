@@ -1,5 +1,11 @@
-import { BlissConfigSchema, type BlissConfig, type Framework, type Language, type PackageManager } from "../types/index.ts";
-import { readJson, writeJson, fileExists, ensureDir } from "../utils/fs.ts";
+import {
+  type BlissConfig,
+  BlissConfigSchema,
+  type Framework,
+  type Language,
+  type PackageManager,
+} from "../types/index.ts";
+import { ensureDir, fileExists, readJson, writeJson } from "../utils/fs.ts";
 import { blissConfigPath, blissDir } from "../utils/path.ts";
 import { logger } from "./logger.ts";
 
@@ -65,7 +71,7 @@ export function createConfig(
   framework: Framework,
   language: Language,
   packageManager: PackageManager,
-  entryFile = "src/index.ts"
+  entryFile = "src/index.ts",
 ): BlissConfig {
   return BlissConfigSchema.parse({
     version: "2.1.0",

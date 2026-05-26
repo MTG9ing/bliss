@@ -1,12 +1,12 @@
-import { defineCommand } from "citty";
-import * as p from "@clack/prompts";
-import { join } from "node:path";
 import { existsSync } from "node:fs";
-import { buildContext } from "../core/detector.ts";
+import { join } from "node:path";
+import * as p from "@clack/prompts";
+import { defineCommand } from "citty";
 import { hasConfig, loadConfig } from "../core/config.ts";
-import { readJson, fileExists } from "../utils/fs.ts";
+import { buildContext } from "../core/detector.ts";
 import { logger } from "../core/logger.ts";
 import { c } from "../utils/colors.ts";
+import { fileExists, readJson } from "../utils/fs.ts";
 
 interface HealthCheck {
   name: string;
@@ -141,8 +141,14 @@ export default defineCommand({
     // Print results
     console.log("");
     for (const check of checks) {
-      const icon = check.status === "pass" ? c.success("✔") : check.status === "warn" ? c.warning("⚠") : c.error("✖");
-      const color = check.status === "pass" ? c.success : check.status === "warn" ? c.warning : c.error;
+      const icon =
+        check.status === "pass"
+          ? c.success("✔")
+          : check.status === "warn"
+            ? c.warning("⚠")
+            : c.error("✖");
+      const color =
+        check.status === "pass" ? c.success : check.status === "warn" ? c.warning : c.error;
       console.log(`${icon} ${color(check.name)}: ${check.message}`);
       if (check.fix) {
         console.log(c.dim(`  → Fix: ${check.fix}`));
@@ -157,7 +163,11 @@ export default defineCommand({
     } else if (failures === 0) {
       p.outro(c.warning(`⚠ ${warnings} warning${warnings > 1 ? "s" : ""} found`));
     } else {
-      p.outro(c.error(`✖ ${failures} failure${failures > 1 ? "s" : ""}, ${warnings} warning${warnings > 1 ? "s" : ""}`));
+      p.outro(
+        c.error(
+          `✖ ${failures} failure${failures > 1 ? "s" : ""}, ${warnings} warning${warnings > 1 ? "s" : ""}`,
+        ),
+      );
     }
   },
 });

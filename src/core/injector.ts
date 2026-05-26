@@ -2,7 +2,7 @@ import { join } from "node:path";
 import MagicString from "magic-string";
 import type { Framework } from "../types/framework.ts";
 import { FRAMEWORK_PATTERNS } from "../types/framework.ts";
-import { readFile, writeFile, fileExists } from "../utils/fs.ts";
+import { fileExists, readFile, writeFile } from "../utils/fs.ts";
 import { logger } from "./logger.ts";
 
 /**
@@ -18,17 +18,17 @@ const INJECTION_POINTS: Record<
   }
 > = {
   express: {
-    import: { after: /^(import\s+.*?from\s+['"][^'"]+['"];?\s*)+$/gm },
+    import: { after: /^(import\s+.*?from\s+['"][^'"]+['"];?\s*)+$/m },
     middleware: { after: /const\s+app\s*=\s*express\(\);?\s*\n/ },
     routes: { before: /app\.listen\s*\(/ },
   },
   fastify: {
-    import: { after: /^(import\s+.*?from\s+['"][^'"]+['"];?\s*)+$/gm },
+    import: { after: /^(import\s+.*?from\s+['"][^'"]+['"];?\s*)+$/m },
     middleware: { after: /const\s+app\s*=\s*fastify\(\{[^}]*\}\);?\s*\n/ },
     routes: { before: /await\s+app\.listen\s*\(/ },
   },
   vanilla: {
-    import: { after: /^(import\s+.*?from\s+['"][^'"]+['"];?\s*)+$/gm },
+    import: { after: /^(import\s+.*?from\s+['"][^'"]+['"];?\s*)+$/m },
     middleware: { after: /createServer\s*\(/ },
     routes: { before: /server\.listen\s*\(/ },
   },
@@ -39,19 +39,19 @@ const INJECTION_POINTS: Record<
  */
 const FEATURE_IMPORTS: Record<string, Record<Framework, string>> = {
   logger: {
-    express: `import { requestLogger } from './middleware/request-logger.js';`,
-    fastify: `import { requestLogger } from './middleware/request-logger.js';`,
-    vanilla: `import { requestLogger } from './middleware/request-logger.js';`,
+    express: `import { requestLogger } from './middleware/request-logger.{ext}';`,
+    fastify: `import { requestLogger } from './middleware/request-logger.{ext}';`,
+    vanilla: `import { requestLogger } from './middleware/request-logger.{ext}';`,
   },
   errors: {
-    express: `import { errorHandler } from './middleware/error-handler.js';`,
-    fastify: `import { errorHandler } from './middleware/error-handler.js';`,
-    vanilla: `import { errorHandler } from './middleware/error-handler.js';`,
+    express: `import { errorHandler } from './middleware/error-handler.{ext}';`,
+    fastify: `import { errorHandler } from './middleware/error-handler.{ext}';`,
+    vanilla: `import { errorHandler } from './middleware/error-handler.{ext}';`,
   },
   env: {
-    express: `import { env } from './config/env.js';`,
-    fastify: `import { env } from './config/env.js';`,
-    vanilla: `import { env } from './config/env.js';`,
+    express: `import { env } from './config/env.{ext}';`,
+    fastify: `import { env } from './config/env.{ext}';`,
+    vanilla: `import { env } from './config/env.{ext}';`,
   },
   cors: {
     express: `import cors from 'cors';`,
@@ -59,19 +59,19 @@ const FEATURE_IMPORTS: Record<string, Record<Framework, string>> = {
     vanilla: `// CORS handled manually in vanilla`,
   },
   security: {
-    express: `import { securityMiddleware } from './middleware/security.js';`,
-    fastify: `import { securityMiddleware } from './middleware/security.js';`,
-    vanilla: `import { securityMiddleware } from './middleware/security.js';`,
+    express: `import { securityMiddleware } from './middleware/security.{ext}';`,
+    fastify: `import { securityMiddleware } from './middleware/security.{ext}';`,
+    vanilla: `import { securityMiddleware } from './middleware/security.{ext}';`,
   },
   performance: {
-    express: `import { performanceMiddleware } from './middleware/performance.js';`,
-    fastify: `import { performanceMiddleware } from './middleware/performance.js';`,
-    vanilla: `import { performanceMiddleware } from './middleware/performance.js';`,
+    express: `import { performanceMiddleware } from './middleware/performance.{ext}';`,
+    fastify: `import { performanceMiddleware } from './middleware/performance.{ext}';`,
+    vanilla: `import { performanceMiddleware } from './middleware/performance.{ext}';`,
   },
   auth: {
-    express: `import { authRoutes } from './routes/auth.js';`,
-    fastify: `import { authRoutes } from './routes/auth.js';`,
-    vanilla: `import { authRoutes } from './routes/auth.js';`,
+    express: `import { authRoutes } from './routes/auth.{ext}';`,
+    fastify: `import { authRoutes } from './routes/auth.{ext}';`,
+    vanilla: `import { authRoutes } from './routes/auth.{ext}';`,
   },
 };
 
@@ -121,39 +121,39 @@ const FEATURE_MIDDLEWARE: Record<string, Record<Framework, string>> = {
  */
 const MANUAL_INSTRUCTIONS: Record<string, Record<Framework, string>> = {
   logger: {
-    express: `Add to your app setup:\n  import { requestLogger } from './middleware/request-logger.js';\n  app.use(requestLogger);`,
-    fastify: `Add to your app setup:\n  import { requestLogger } from './middleware/request-logger.js';\n  app.addHook('onRequest', requestLogger);`,
-    vanilla: `Add to your request handler:\n  import { requestLogger } from './middleware/request-logger.js';\n  // Call requestLogger(req, res) in your handler`,
+    express: `Add to your app setup:\n import { requestLogger } from './middleware/request-logger.{ext}';\n app.use(requestLogger);`,
+    fastify: `Add to your app setup:\n import { requestLogger } from './middleware/request-logger.{ext}';\n app.addHook('onRequest', requestLogger);`,
+    vanilla: `Add to your request handler:\n import { requestLogger } from './middleware/request-logger.{ext}';\n // Call requestLogger(req, res) in your handler`,
   },
   errors: {
-    express: `Add to your app setup:\n  import { errorHandler } from './middleware/error-handler.js';\n  app.use(errorHandler);`,
-    fastify: `Add to your app setup:\n  import { errorHandler } from './middleware/error-handler.js';\n  app.setErrorHandler(errorHandler);`,
-    vanilla: `Add to your error handling:\n  import { errorHandler } from './middleware/error-handler.js';\n  // Call errorHandler(err, req, res)`,
+    express: `Add to your app setup:\n import { errorHandler } from './middleware/error-handler.{ext}';\n app.use(errorHandler);`,
+    fastify: `Add to your app setup:\n import { errorHandler } from './middleware/error-handler.{ext}';\n app.setErrorHandler(errorHandler);`,
+    vanilla: `Add to your error handling:\n import { errorHandler } from './middleware/error-handler.{ext}';\n // Call errorHandler(err, req, res)`,
   },
   env: {
-    express: `Add to your entry file:\n  import { env } from './config/env.js';\n  // Use env.PORT, env.DATABASE_URL, etc.`,
-    fastify: `Add to your entry file:\n  import { env } from './config/env.js';\n  // Use env.PORT, env.DATABASE_URL, etc.`,
-    vanilla: `Add to your entry file:\n  import { env } from './config/env.js';\n  // Use env.PORT, env.DATABASE_URL, etc.`,
+    express: `Add to your entry file:\n import { env } from './config/env.{ext}';\n // Use env.PORT, env.DATABASE_URL, etc.`,
+    fastify: `Add to your entry file:\n import { env } from './config/env.{ext}';\n // Use env.PORT, env.DATABASE_URL, etc.`,
+    vanilla: `Add to your entry file:\n import { env } from './config/env.{ext}';\n // Use env.PORT, env.DATABASE_URL, etc.`,
   },
   cors: {
-    express: `Add to your app setup:\n  import cors from 'cors';\n  app.use(cors());`,
-    fastify: `Add to your app setup:\n  import cors from '@fastify/cors';\n  app.register(cors);`,
+    express: `Add to your app setup:\n import cors from 'cors';\n app.use(cors());`,
+    fastify: `Add to your app setup:\n import cors from '@fastify/cors';\n app.register(cors);`,
     vanilla: `Add CORS headers manually to responses`,
   },
   security: {
-    express: `Add to your app setup:\n  import { securityMiddleware } from './middleware/security.js';\n  app.use(securityMiddleware);`,
-    fastify: `Add to your app setup:\n  import { securityMiddleware } from './middleware/security.js';\n  app.register(securityMiddleware);`,
-    vanilla: `Add to your request handler:\n  import { securityMiddleware } from './middleware/security.js';\n  // Call securityMiddleware(req, res)`,
+    express: `Add to your app setup:\n import { securityMiddleware } from './middleware/security.{ext}';\n app.use(securityMiddleware);`,
+    fastify: `Add to your app setup:\n import { securityMiddleware } from './middleware/security.{ext}';\n app.register(securityMiddleware);`,
+    vanilla: `Add to your request handler:\n import { securityMiddleware } from './middleware/security.{ext}';\n // Call securityMiddleware(req, res)`,
   },
   performance: {
-    express: `Add to your app setup:\n  import { performanceMiddleware } from './middleware/performance.js';\n  app.use(performanceMiddleware);`,
-    fastify: `Add to your app setup:\n  import { performanceMiddleware } from './middleware/performance.js';\n  app.register(performanceMiddleware);`,
-    vanilla: `Add to your request handler:\n  import { performanceMiddleware } from './middleware/performance.js';\n  // Call performanceMiddleware(req, res)`,
+    express: `Add to your app setup:\n import { performanceMiddleware } from './middleware/performance.{ext}';\n app.use(performanceMiddleware);`,
+    fastify: `Add to your app setup:\n import { performanceMiddleware } from './middleware/performance.{ext}';\n app.register(performanceMiddleware);`,
+    vanilla: `Add to your request handler:\n import { performanceMiddleware } from './middleware/performance.{ext}';\n // Call performanceMiddleware(req, res)`,
   },
   auth: {
-    express: `Add to your app setup:\n  import { authRoutes } from './routes/auth.js';\n  app.use('/auth', authRoutes);`,
-    fastify: `Add to your app setup:\n  import { authRoutes } from './routes/auth.js';\n  app.register(authRoutes, { prefix: '/auth' });`,
-    vanilla: `Add to your route handler:\n  import { authRoutes } from './routes/auth.js';\n  // Call authRoutes(req, res) for /auth paths`,
+    express: `Add to your app setup:\n import { authRoutes } from './routes/auth.{ext}';\n app.use('/auth', authRoutes);`,
+    fastify: `Add to your app setup:\n import { authRoutes } from './routes/auth.{ext}';\n app.register(authRoutes, { prefix: '/auth' });`,
+    vanilla: `Add to your route handler:\n import { authRoutes } from './routes/auth.{ext}';\n // Call authRoutes(req, res) for /auth paths`,
   },
 };
 
@@ -164,19 +164,41 @@ export interface InjectionResult {
 }
 
 /**
+ * Escape regex special characters in a string
+ */
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Get the file extension for imports based on language
+ */
+function getImportExt(isTypeScript: boolean): string {
+  return isTypeScript ? "ts" : "js";
+}
+
+/**
+ * Replace {ext} placeholder in template strings
+ */
+function resolveExt(template: string, isTypeScript: boolean): string {
+  return template.replace(/\{ext\}/g, getImportExt(isTypeScript));
+}
+
+/**
  * Inject a feature into the project's entry file
  */
 export function injectFeature(
   entryPath: string,
   featureId: string,
-  framework: Framework
+  framework: Framework,
+  isTypeScript = true,
 ): InjectionResult {
   const content = readFile(entryPath);
   if (!content) {
     return {
       success: false,
       modified: [],
-      manualInstructions: MANUAL_INSTRUCTIONS[featureId]?.[framework],
+      manualInstructions: resolveExt(MANUAL_INSTRUCTIONS[featureId]?.[framework], isTypeScript),
     };
   }
 
@@ -188,7 +210,7 @@ export function injectFeature(
     return {
       success: false,
       modified: [],
-      manualInstructions: MANUAL_INSTRUCTIONS[featureId]?.[framework],
+      manualInstructions: resolveExt(MANUAL_INSTRUCTIONS[featureId]?.[framework], isTypeScript),
     };
   }
 
@@ -196,16 +218,19 @@ export function injectFeature(
   const points = INJECTION_POINTS[framework];
 
   // 1. Add import
-  const importCode = FEATURE_IMPORTS[featureId]?.[framework];
-  if (importCode) {
-    const importMatch = content.match(points.import.after);
+  const importTemplate = FEATURE_IMPORTS[featureId]?.[framework];
+  if (importTemplate) {
+    const importCode = resolveExt(importTemplate, isTypeScript);
+    const importMatch = points.import.after.exec(content);
     if (importMatch) {
-      const insertPos = importMatch.index! + importMatch[0].length;
+      const insertPos = importMatch.index + importMatch[0].length;
       s.appendLeft(insertPos, `\n${importCode}\n`);
       logger.debug(`Injected import for ${featureId}`);
     } else {
-      // Fallback: prepend to top of file
-      s.prepend(`${importCode}\n\n`);
+      // Fallback: prepend to top of file (after shebang if present)
+      const shebangMatch = content.match(/^#!.*\n/);
+      const insertPos = shebangMatch ? shebangMatch[0].length : 0;
+      s.appendLeft(insertPos, `${importCode}\n\n`);
       logger.debug(`Prepended import for ${featureId}`);
     }
   }
@@ -213,9 +238,9 @@ export function injectFeature(
   // 2. Add middleware usage
   const middlewareCode = FEATURE_MIDDLEWARE[featureId]?.[framework];
   if (middlewareCode) {
-    const middlewareMatch = content.match(points.middleware.after);
+    const middlewareMatch = points.middleware.after.exec(content);
     if (middlewareMatch) {
-      const insertPos = middlewareMatch.index! + middlewareMatch[0].length;
+      const insertPos = middlewareMatch.index + middlewareMatch[0].length;
       s.appendLeft(insertPos, `\n${middlewareCode}\n`);
       logger.debug(`Injected middleware for ${featureId}`);
     }
@@ -233,7 +258,7 @@ export function injectFeature(
   return {
     success: false,
     modified: [],
-    manualInstructions: MANUAL_INSTRUCTIONS[featureId]?.[framework],
+    manualInstructions: resolveExt(MANUAL_INSTRUCTIONS[featureId]?.[framework], isTypeScript),
   };
 }
 
@@ -244,7 +269,8 @@ export function injectFeature(
 export function removeFeatureInjection(
   entryPath: string,
   featureId: string,
-  framework: Framework
+  framework: Framework,
+  isTypeScript = true,
 ): InjectionResult {
   const content = readFile(entryPath);
   if (!content) {
@@ -252,18 +278,19 @@ export function removeFeatureInjection(
   }
 
   const s = new MagicString(content);
-  const importCode = FEATURE_IMPORTS[featureId]?.[framework];
+  const importTemplate = FEATURE_IMPORTS[featureId]?.[framework];
   const middlewareCode = FEATURE_MIDDLEWARE[featureId]?.[framework];
 
   // Remove import line
-  if (importCode) {
-    const importRegex = new RegExp(`^.*${importCode.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}.*$\\n?`, "gm");
+  if (importTemplate) {
+    const importCode = resolveExt(importTemplate, isTypeScript);
+    const importRegex = new RegExp(`^.*${escapeRegExp(importCode)}.*$\n?`, "gm");
     s.replace(importRegex, "");
   }
 
   // Remove middleware line
   if (middlewareCode) {
-    const middlewareRegex = new RegExp(`^.*${middlewareCode.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}.*$\\n?`, "gm");
+    const middlewareRegex = new RegExp(`^.*${escapeRegExp(middlewareCode)}.*$\n?`, "gm");
     s.replace(middlewareRegex, "");
   }
 
@@ -277,6 +304,10 @@ export function removeFeatureInjection(
 /**
  * Get manual instructions for a feature
  */
-export function getManualInstructions(featureId: string, framework: Framework): string | undefined {
-  return MANUAL_INSTRUCTIONS[featureId]?.[framework];
+export function getManualInstructions(
+  featureId: string,
+  framework: Framework,
+  isTypeScript = true,
+): string | undefined {
+  return resolveExt(MANUAL_INSTRUCTIONS[featureId]?.[framework], isTypeScript);
 }

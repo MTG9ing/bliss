@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { generateToken, authenticate, hashPassword } from "../lib/auth.js";
+import { authenticate, generateToken, hashPassword } from "../lib/auth.js";
 
 export const authRoutes = Router();
 

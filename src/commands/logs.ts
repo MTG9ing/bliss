@@ -1,10 +1,10 @@
-import { defineCommand } from "citty";
-import * as p from "@clack/prompts";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { readdirSync, readFileSync } from "node:fs";
-import { blissLogsDir } from "../utils/path.ts";
+import * as p from "@clack/prompts";
+import { defineCommand } from "citty";
 import { logger } from "../core/logger.ts";
 import { c } from "../utils/colors.ts";
+import { blissLogsDir } from "../utils/path.ts";
 
 export default defineCommand({
   meta: {
@@ -24,8 +24,11 @@ export default defineCommand({
     const cwd = process.cwd();
     const logsDir = blissLogsDir(cwd);
 
-    if (!readdirSync(logsDir)) {
-      p.cancel("No logs found. Run some commands first.");
+    if (!existsSync(logsDir)) {
+      p.note(`Logs location: ${logsDir}`);
+      p.cancel(
+        "No logs directory found. Run some Bliss commands first (e.g., 'bliss create my-app').",
+      );
       return;
     }
 
@@ -35,14 +38,18 @@ export default defineCommand({
       .reverse();
 
     if (files.length === 0) {
-      p.cancel("No log files found.");
+      p.note(`Logs directory: ${logsDir}`);
+      p.cancel("No log files found. Run a Bliss command to generate logs.");
       return;
     }
 
     // Show recent entries from latest file
     const latestFile = join(logsDir, files[0]);
     const content = readFileSync(latestFile, "utf-8");
-    const lines = content.trim().split("\n").filter((l) => l.trim());
+    const lines = content
+      .trim()
+      .split("\n")
+      .filter((l) => l.trim());
 
     const limit = parseInt(args.lines, 10) || 50;
     const recent = lines.slice(-limit);
@@ -55,7 +62,14 @@ export default defineCommand({
       if (match) {
         const [, timestamp, level, message] = match;
         const time = timestamp.split("T")[1].slice(0, 8);
-        const color = level === "ERROR" ? c.error : level === "WARN" ? c.warning : level === "SUCCESS" ? c.success : c.dim;
+        const color =
+          level === "ERROR"
+            ? c.error
+            : level === "WARN"
+              ? c.warning
+              : level === "SUCCESS"
+                ? c.success
+                : c.dim;
         console.log(`${c.dim(time)} ${color(`[${level}]`)} ${message}`);
       } else {
         console.log(c.dim(line));

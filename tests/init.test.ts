@@ -1,9 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { createTempDir, cleanupTempDir, createPackageJson, createTsConfig } from "./setup.ts";
-import { buildContext, detectFramework, detectLanguage, detectPackageManager } from "../src/core/detector.ts";
-import { createConfig, saveConfig, loadConfig, hasConfig } from "../src/core/config.ts";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { createConfig, hasConfig, loadConfig, saveConfig } from "../src/core/config.ts";
+import {
+  buildContext,
+  detectFramework,
+  detectLanguage,
+  detectPackageManager,
+} from "../src/core/detector.ts";
+import { cleanupTempDir, createPackageJson, createTempDir, createTsConfig } from "./setup.ts";
 
 describe("init command", () => {
   let tempDir: string;

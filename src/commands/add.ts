@@ -1,13 +1,18 @@
-import { defineCommand } from "citty";
-import * as p from "@clack/prompts";
-import { buildContext, detectEntryFile, validateEntryFile } from "../core/detector.ts";
-import { hasConfig, loadConfig, addFeature as addFeatureToConfig, updateEntryFile } from "../core/config.ts";
-import { installPackages } from "../core/installer.ts";
-import { copyFeatureTemplate } from "../templates/engine.ts";
-import { injectFeature, getManualInstructions } from "../core/injector.ts";
-import { logger } from "../core/logger.ts";
-import { c } from "../utils/colors.ts";
 import { join } from "node:path";
+import * as p from "@clack/prompts";
+import { defineCommand } from "citty";
+import {
+  addFeature as addFeatureToConfig,
+  hasConfig,
+  loadConfig,
+  updateEntryFile,
+} from "../core/config.ts";
+import { buildContext, detectEntryFile, validateEntryFile } from "../core/detector.ts";
+import { getManualInstructions, injectFeature } from "../core/injector.ts";
+import { installPackages } from "../core/installer.ts";
+import { logger, setLogCwd } from "../core/logger.ts";
+import { copyFeatureTemplate } from "../templates/engine.ts";
+import { c } from "../utils/colors.ts";
 
 const AVAILABLE_FEATURES = [
   { value: "logger", label: "Logger", hint: "Structured logging with Pino" },
@@ -33,8 +38,9 @@ export default defineCommand({
   },
   async run({ args }) {
     p.intro(c.bold("➕ Bliss Add — Install a feature"));
-
     const cwd = process.cwd();
+    setLogCwd(cwd);
+
 
     if (!hasConfig(cwd)) {
       p.cancel("No bliss config found. Run 'bliss init' first.");
@@ -99,9 +105,15 @@ export default defineCommand({
       errors: { runtime: [], dev: [] },
       env: { runtime: ["dotenv", "zod"], dev: [] },
       cors: { runtime: framework === "fastify" ? ["@fastify/cors"] : ["cors"], dev: [] },
-      security: { runtime: ["helmet", "express-rate-limit", "express-mongo-sanitize", "hpp"], dev: [] },
+      security: {
+        runtime: ["helmet", "express-rate-limit", "express-mongo-sanitize", "hpp"],
+        dev: [],
+      },
       performance: { runtime: ["compression"], dev: [] },
-      auth: { runtime: ["jsonwebtoken", "bcryptjs"], dev: ["@types/jsonwebtoken", "@types/bcryptjs"] },
+      auth: {
+        runtime: ["jsonwebtoken", "bcryptjs"],
+        dev: ["@types/jsonwebtoken", "@types/bcryptjs"],
+      },
     };
 
     const deps = featureDeps[featureId];
@@ -136,7 +148,12 @@ export default defineCommand({
       }
     }
 
-    const injectResult = injectFeature(join(cwd, entryFile), featureId, framework);
+    const injectResult = injectFeature(
+      join(cwd, entryFile),
+      featureId,
+      framework,
+      config.project.language === "typescript",
+    );
 
     // 4. Update config
     addFeatureToConfig(featureId, cwd);
@@ -144,7 +161,7 @@ export default defineCommand({
     s.stop(c.success(`Feature "${featureId}" added`));
 
     if (injectResult.manualInstructions) {
-      console.log(c.yellow("\n⚠ Auto-injection failed. Add manually:\n"));
+      console.log(c.warning("\n⚠ Auto-injection failed. Add manually:\n"));
       console.log(c.dim(injectResult.manualInstructions));
     }
 

@@ -13,7 +13,13 @@ export type PackageManager = "npm" | "bun" | "pnpm";
 
 export type ProjectType = "starter" | "backend" | "library" | "frontend";
 
-export type ProjectStructure = "standard" | "mvc" | "microservices" | "oop" | "functional" | "hexagonal";
+export type ProjectStructure =
+  | "standard"
+  | "mvc"
+  | "microservices"
+  | "oop"
+  | "functional"
+  | "hexagonal";
 
 export interface FrameworkMeta {
   name: Framework;
@@ -29,7 +35,14 @@ export const FRAMEWORK_META: Record<Framework, FrameworkMeta> = {
     name: "express",
     displayName: "Express.js",
     packageName: "express",
-    entryFiles: ["src/index.ts", "src/index.js", "src/app.ts", "src/app.js", "src/server.ts", "src/server.js"],
+    entryFiles: [
+      "src/index.ts",
+      "src/index.js",
+      "src/app.ts",
+      "src/app.js",
+      "src/server.ts",
+      "src/server.js",
+    ],
     port: 3000,
     language: "javascript",
   },

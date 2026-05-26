@@ -1,4 +1,4 @@
-import { resolve, join, dirname } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
@@ -33,14 +33,24 @@ export function moduleBackupPath(cwd: string, moduleId: string): string {
 export function getBlissRoot(): string {
   const currentFile = fileURLToPath(import.meta.url);
   const currentDir = dirname(currentFile);
+  const dirName = basename(currentDir);
 
-  // Built to dist/utils/path.js — go up to project root
-  if (currentDir.includes("dist")) {
-    return resolve(currentDir, "..", "..");
+  // Built to dist/utils/path.js — currentDir is dist/utils, go up to project root
+  if (dirName === "utils") {
+    const parentDir = dirname(currentDir);
+    const parentName = basename(parentDir);
+    if (parentName === "dist" || parentName === "src") {
+      return resolve(parentDir, "..");
+    }
   }
 
   // Source mode: src/utils/ — go up to project root
-  if (currentDir.includes("src")) {
+  if (currentDir.includes("/src/utils") || currentDir.includes("\\src\\utils")) {
+    return resolve(currentDir, "..", "..");
+  }
+
+  // Built mode fallback
+  if (currentDir.includes("/dist/utils") || currentDir.includes("\\dist\\utils")) {
     return resolve(currentDir, "..", "..");
   }
 

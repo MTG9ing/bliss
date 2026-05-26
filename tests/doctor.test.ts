@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { createTempDir, cleanupTempDir, createPackageJson, createBlissConfig } from "./setup.ts";
 import { hasConfig, loadConfig } from "../src/core/config.ts";
+import { cleanupTempDir, createBlissConfig, createPackageJson, createTempDir } from "./setup.ts";
 
 describe("doctor command", () => {
   let tempDir: string;

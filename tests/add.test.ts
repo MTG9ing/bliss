@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { createTempDir, cleanupTempDir, createBlissConfig } from "./setup.ts";
-import { copyFeatureTemplate } from "../src/templates/engine.ts";
 import { injectFeature } from "../src/core/injector.ts";
+import { copyFeatureTemplate } from "../src/templates/engine.ts";
+import { cleanupTempDir, createBlissConfig, createTempDir } from "./setup.ts";
 
 describe("add command", () => {
   let tempDir: string;
@@ -16,7 +16,7 @@ describe("add command", () => {
     mkdirSync(join(tempDir, "src"), { recursive: true });
     writeFileSync(
       join(tempDir, "src", "index.ts"),
-      `import express from 'express';\nconst app = express();\napp.listen(3000);\n`
+      `import express from 'express';\nconst app = express();\napp.listen(3000);\n`,
     );
   });
 

@@ -1,6 +1,6 @@
-import { defineCommand } from "citty";
-import * as p from "@clack/prompts";
 import { join } from "node:path";
+import * as p from "@clack/prompts";
+import { defineCommand } from "citty";
 import { hasConfig, loadConfig, removeFeature as removeFeatureFromConfig } from "../core/config.ts";
 import { removeFeatureInjection } from "../core/injector.ts";
 import { uninstallPackages } from "../core/installer.ts";
@@ -68,7 +68,12 @@ export default defineCommand({
 
     // 1. Remove injection from entry file
     const entryPath = join(cwd, config.project.entryFile);
-    removeFeatureInjection(entryPath, featureId, config.project.framework);
+    removeFeatureInjection(
+      entryPath,
+      featureId,
+      config.project.framework,
+      config.project.language === "typescript",
+    );
 
     // 2. Remove from config (we don't delete files to avoid breaking user code)
     removeFeatureFromConfig(featureId, cwd);

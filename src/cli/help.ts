@@ -1,5 +1,5 @@
 import { c } from "../utils/colors.ts";
-import { getCommandList, getCommandDescription } from "./commands.ts";
+import { getCommandDescription, getCommandList } from "./commands.ts";
 
 export function generateHelp(): string {
   const commands = getCommandList();

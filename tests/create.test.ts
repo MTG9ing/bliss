@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createTempDir, cleanupTempDir } from "./setup.ts";
 import { scaffoldProject } from "../src/templates/engine.ts";
+import { cleanupTempDir, createTempDir } from "./setup.ts";
 
 describe("create command", () => {
   let tempDir: string;

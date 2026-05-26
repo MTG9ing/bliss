@@ -1,10 +1,10 @@
-import { defineCommand } from "citty";
-import * as p from "@clack/prompts";
 import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { c } from "../utils/colors.ts";
+import * as p from "@clack/prompts";
+import { defineCommand } from "citty";
 import { logger } from "../core/logger.ts";
+import { c } from "../utils/colors.ts";
 
 function runGit(args: string[], cwd = process.cwd()): string {
   return execSync(`git ${args.join(" ")}`, { cwd, encoding: "utf-8" }).trim();
@@ -69,13 +69,11 @@ export default defineCommand({
       if (hasGh) {
         options.push(
           { value: "pr", label: "Create Pull Request", hint: "GitHub" },
-          { value: "issue", label: "Create Issue", hint: "GitHub" }
+          { value: "issue", label: "Create Issue", hint: "GitHub" },
         );
       }
 
-      options.push(
-        { value: "whoami", label: "Who am I?", hint: ghUser || "Not configured" }
-      );
+      options.push({ value: "whoami", label: "Who am I?", hint: ghUser || "Not configured" });
 
       action = (await p.select({
         message: "What would you like to do?",
@@ -118,7 +116,10 @@ export default defineCommand({
             console.log(c.warning("No changes to stage"));
             return;
           }
-          const files = status.split("\n").map((l) => l.slice(3).trim()).filter(Boolean);
+          const files = status
+            .split("\n")
+            .map((l) => l.slice(3).trim())
+            .filter(Boolean);
           const selected = await p.multiselect({
             message: "Select files to stage:",
             options: files.map((f) => ({ value: f, label: f })),
@@ -138,7 +139,7 @@ export default defineCommand({
           const message = (await p.text({
             message: "Commit message?",
             placeholder: "feat: add new feature",
-            validate: (v) => !v ? "Message required" : undefined,
+            validate: (v) => (!v ? "Message required" : undefined),
           })) as string;
 
           if (p.isCancel(message)) return;
@@ -218,7 +219,7 @@ export default defineCommand({
             case "create": {
               const name = (await p.text({
                 message: "Branch name?",
-                validate: (v) => !v ? "Name required" : undefined,
+                validate: (v) => (!v ? "Name required" : undefined),
               })) as string;
               if (!p.isCancel(name)) {
                 runGit(["checkout", "-b", name], cwd);
@@ -316,7 +317,7 @@ export default defineCommand({
           }
           const title = (await p.text({
             message: "PR title?",
-            validate: (v) => !v ? "Title required" : undefined,
+            validate: (v) => (!v ? "Title required" : undefined),
           })) as string;
           const body = (await p.text({
             message: "PR description? (optional)",
@@ -344,7 +345,7 @@ export default defineCommand({
           }
           const title = (await p.text({
             message: "Issue title?",
-            validate: (v) => !v ? "Title required" : undefined,
+            validate: (v) => (!v ? "Title required" : undefined),
           })) as string;
           const body = (await p.text({
             message: "Issue description? (optional)",

@@ -1,8 +1,8 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { Framework, Language, PackageManager, ProjectType } from "../types/framework.ts";
-import { FRAMEWORKS, FRAMEWORK_PATTERNS, FRAMEWORK_META } from "../types/framework.ts";
-import { readJson, readFile, fileExists } from "../utils/fs.ts";
+import { FRAMEWORK_META, FRAMEWORK_PATTERNS, FRAMEWORKS } from "../types/framework.ts";
+import { fileExists, readFile, readJson } from "../utils/fs.ts";
 import { logger } from "./logger.ts";
 
 /**
@@ -10,7 +10,10 @@ import { logger } from "./logger.ts";
  */
 export function detectFramework(cwd = process.cwd()): Framework | null {
   const pkgPath = join(cwd, "package.json");
-  const pkg = readJson<{ dependencies?: Record<string, string>; devDependencies?: Record<string, string> }>(pkgPath);
+  const pkg = readJson<{
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  }>(pkgPath);
   if (!pkg) return null;
 
   const allDeps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
@@ -32,7 +35,7 @@ export function detectFramework(cwd = process.cwd()): Framework | null {
 export function detectLanguage(cwd = process.cwd()): Language {
   const hasTsConfig = fileExists(join(cwd, "tsconfig.json"));
   const hasTsFiles = readdirSync(cwd, { recursive: true }).some(
-    (f) => typeof f === "string" && f.endsWith(".ts") && !f.endsWith(".d.ts")
+    (f) => typeof f === "string" && f.endsWith(".ts") && !f.endsWith(".d.ts"),
   );
   return hasTsConfig || hasTsFiles ? "typescript" : "javascript";
 }

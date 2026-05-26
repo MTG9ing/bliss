@@ -1,15 +1,16 @@
-import { defineCommand } from "citty";
-import * as p from "@clack/prompts";
 import { existsSync, mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { Framework, Language, PackageManager } from "../types/framework.ts";
-import { FRAMEWORKS, FRAMEWORK_META } from "../types/framework.ts";
-import { detectPackageManager } from "../core/detector.ts";
+import * as p from "@clack/prompts";
+import { defineCommand } from "citty";
 import { createConfig, saveConfig } from "../core/config.ts";
+import { detectPackageManager } from "../core/detector.ts";
 import { installPackages } from "../core/installer.ts";
+import { logger, setLogCwd } from "../core/logger.ts";
 import { scaffoldProject } from "../templates/engine.ts";
-import { logger } from "../core/logger.ts";
+import type { Framework, Language, PackageManager } from "../types/framework.ts";
+import { FRAMEWORK_META, FRAMEWORKS } from "../types/framework.ts";
 import { c } from "../utils/colors.ts";
+import { readJson } from "../utils/fs.ts";
 
 export default defineCommand({
   meta: {
@@ -107,6 +108,7 @@ export default defineCommand({
         { value: "bun", label: "Bun (recommended)" },
         { value: "npm", label: "npm" },
         { value: "pnpm", label: "pnpm" },
+        { value: "yarn", label: "yarn" },
       ],
       initialValue: detectedPm,
     })) as PackageManager;
@@ -175,6 +177,9 @@ export default defineCommand({
       includeGit,
     };
 
+    // Set log directory to target project
+    setLogCwd(targetDir);
+
     scaffoldProject(targetDir, context);
 
     // Save config
@@ -198,9 +203,9 @@ export default defineCommand({
     // Install dependencies
     s.message("Installing dependencies...");
     const pkgPath = join(targetDir, "package.json");
-    const pkg = await import(pkgPath, { assert: { type: "json" } });
-    const deps = Object.keys(pkg.default.dependencies || {});
-    const devDeps = Object.keys(pkg.default.devDependencies || {});
+    const pkg = readJson<Record<string, unknown>>(pkgPath);
+    const deps = Object.keys((pkg?.dependencies as Record<string, unknown>) || {});
+    const devDeps = Object.keys((pkg?.devDependencies as Record<string, unknown>) || {});
 
     if (deps.length > 0) installPackages(deps, packageManager, targetDir, false);
     if (devDeps.length > 0) installPackages(devDeps, packageManager, targetDir, true);

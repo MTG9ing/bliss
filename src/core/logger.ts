@@ -1,13 +1,14 @@
+import { readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { c } from "../utils/colors.ts";
-import { ensureDir, writeFile } from "../utils/fs.ts";
-import { dirname } from "node:path";  // ← ADD THIS
+import { ensureDir, readFile, writeFile } from "../utils/fs.ts";
 import { blissLogPath } from "../utils/path.ts";
-import { readFileSync, writeFileSync } from "node:fs"; // add these
 
 export type LogLevel = "debug" | "info" | "success" | "warn" | "error" | "step";
 
 let currentLevel: LogLevel = "info";
 let logToFile = true;
+let customCwd: string | null = null;
 
 export function setLogLevel(level: LogLevel): void {
   currentLevel = level;
@@ -15,6 +16,14 @@ export function setLogLevel(level: LogLevel): void {
 
 export function setLogToFile(enabled: boolean): void {
   logToFile = enabled;
+}
+
+/**
+ * Set custom working directory for logs
+ * Useful for CLI commands that want to log to a specific project directory
+ */
+export function setLogCwd(cwd: string | null): void {
+  customCwd = cwd;
 }
 
 const LEVEL_PRIORITY: Record<LogLevel, number> = {
@@ -34,14 +43,24 @@ function writeToLogFile(level: LogLevel, message: string): void {
   if (!logToFile) return;
   const timestamp = new Date().toISOString();
   const line = `[${timestamp}] [${level.toUpperCase()}] ${message}\n`;
-  const path = blissLogPath();
-  ensureDir(dirname(path));
+  const path = blissLogPath(customCwd || process.cwd());
+  const dir = dirname(path);
 
   try {
+    // Ensure directory exists first
+    const dirCreated = ensureDir(dir);
+    if (!dirCreated) {
+      console.error(`[Logger Error] Failed to create log directory: ${dir}`);
+      return;
+    }
+
     const existing = readFileSync(path, "utf-8") || "";
     writeFileSync(path, existing + line, "utf-8");
-  } catch {
-    // Silently fail
+  } catch (err) {
+    // Log to console on failure instead of silently failing
+    console.error(
+      `[Logger Error] Failed to write to log file at ${path}: ${(err as Error).message}`,
+    );
   }
 }
 

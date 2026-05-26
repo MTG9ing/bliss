@@ -33,6 +33,6 @@
     }
   },
   "files": {
-    "includes": ["src/**", "tests/**", "scripts/**", "!dist/**", "!node_modules/**", "!.bliss/**"]
+    "includes": ["src/**", "tests/**", "scripts/**", "!dist", "!node_modules", "!.bliss"]
   }
 }

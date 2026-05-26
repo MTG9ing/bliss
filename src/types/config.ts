@@ -1,5 +1,12 @@
 import { z } from "zod";
-import { FRAMEWORKS, type Framework, type Language, type PackageManager, type ProjectType, type ProjectStructure } from "./framework.ts";
+import {
+  FRAMEWORKS,
+  type Framework,
+  type Language,
+  type PackageManager,
+  type ProjectStructure,
+  type ProjectType,
+} from "./framework.ts";
 
 // Zod v4: use z.enum with array cast to tuple
 const FrameworkEnum = z.enum(FRAMEWORKS as [Framework, ...Framework[]]);
@@ -10,11 +17,20 @@ export const BlissConfigSchema = z.object({
     name: z.string().min(1),
     type: z.enum(["starter", "backend", "library", "frontend"] as [ProjectType, ...ProjectType[]]),
     framework: FrameworkEnum,
-    language: z.enum(["typescript", "javascript"] as [Language, ...Language[]]).default("typescript"),
-    structure: z.enum(["standard", "mvc", "microservices", "oop", "functional", "hexagonal"] as [ProjectStructure, ...ProjectStructure[]]).default("standard"),
+    language: z
+      .enum(["typescript", "javascript"] as [Language, ...Language[]])
+      .default("typescript"),
+    structure: z
+      .enum(["standard", "mvc", "microservices", "oop", "functional", "hexagonal"] as [
+        ProjectStructure,
+        ...ProjectStructure[],
+      ])
+      .default("standard"),
     entryFile: z.string().default("src/index.ts"),
   }),
-  packageManager: z.enum(["npm", "bun", "pnpm"] as [PackageManager, ...PackageManager[]]).default("bun"),
+  packageManager: z
+    .enum(["npm", "bun", "pnpm"] as [PackageManager, ...PackageManager[]])
+    .default("bun"),
   features: z.array(z.string()).default([]),
   git: z
     .object({

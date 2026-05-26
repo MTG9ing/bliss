@@ -1,11 +1,11 @@
-import { join, dirname } from "node:path";
 import { readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { transform } from "sucrase";
-import { writeFile, writeJson, ensureDir, readFile } from "../utils/fs.ts";
-import { getTemplatePath } from "../utils/path.ts";
+import { logger } from "../core/logger.ts";
 import type { Framework, Language, PackageManager } from "../types/framework.ts";
 import { FRAMEWORK_META } from "../types/framework.ts";
-import { logger } from "../core/logger.ts";
+import { ensureDir, readFile, writeFile, writeJson } from "../utils/fs.ts";
+import { getTemplatePath } from "../utils/path.ts";
 
 export interface TemplateContext {
   projectName: string;
@@ -20,7 +20,7 @@ export interface TemplateContext {
 export function renderTemplateFile(
   sourcePath: string,
   targetPath: string,
-  language: Language
+  language: Language,
 ): boolean {
   const content = readFile(sourcePath);
   if (!content) return false;
@@ -48,11 +48,7 @@ export function renderTemplateFile(
   return writeFile(finalPath, processed);
 }
 
-export function copyTemplateDir(
-  sourceDir: string,
-  targetDir: string,
-  language: Language
-): boolean {
+export function copyTemplateDir(sourceDir: string, targetDir: string, language: Language): boolean {
   try {
     ensureDir(targetDir);
     const entries = readdirSync(sourceDir, { withFileTypes: true });
@@ -88,7 +84,7 @@ export function scaffoldProject(targetDir: string, context: TemplateContext): bo
   const frameworkDir = getTemplatePath(context.framework);
   const srcDir = join(targetDir, "src");
   ensureDir(srcDir);
-  copyTemplateDir(frameworkDir, srcDir, context.language);
+  copyTemplateDir(join(frameworkDir, "src"), srcDir, context.language);
 
   const pkg = generatePackageJson(context);
   writeJson(join(targetDir, "package.json"), pkg);
@@ -109,12 +105,12 @@ export function scaffoldProject(targetDir: string, context: TemplateContext): bo
 export function copyFeatureTemplate(
   featureId: string,
   targetDir: string,
-  language: Language
+  language: Language,
 ): boolean {
   const featureDir = getTemplatePath(join("features", featureId));
   logger.step(`Copying ${featureId} feature template`);
 
-  const ok = copyTemplateDir(featureDir, join(targetDir, "src"), language);
+  const ok = copyTemplateDir(join(featureDir, "src"), join(targetDir, "src"), language);
   if (ok) {
     logger.success(`Copied ${featureId} files`);
   } else {
@@ -256,7 +252,7 @@ function generateReadme(context: TemplateContext): string {
     "---",
     "",
     "Built with [Bliss CLI](https://github.com/MTG9ing/bliss) ❤️",
-    ""
+    "",
   );
 
   return lines.join("\n");
@@ -264,7 +260,7 @@ function generateReadme(context: TemplateContext): string {
 
 function getFeatureDependencies(
   features: string[],
-  framework: Framework
+  framework: Framework,
 ): { runtime: string[]; dev: string[] } {
   const runtime: string[] = [];
   const dev: string[] = [];
@@ -274,9 +270,15 @@ function getFeatureDependencies(
     errors: { runtime: [], dev: [] },
     env: { runtime: ["dotenv", "zod"], dev: [] },
     cors: { runtime: framework === "fastify" ? ["@fastify/cors"] : ["cors"], dev: [] },
-    security: { runtime: ["helmet", "express-rate-limit", "express-mongo-sanitize", "hpp"], dev: [] },
+    security: {
+      runtime: ["helmet", "express-rate-limit", "express-mongo-sanitize", "hpp"],
+      dev: [],
+    },
     performance: { runtime: ["compression"], dev: [] },
-    auth: { runtime: ["jsonwebtoken", "bcryptjs"], dev: ["@types/jsonwebtoken", "@types/bcryptjs"] },
+    auth: {
+      runtime: ["jsonwebtoken", "bcryptjs"],
+      dev: ["@types/jsonwebtoken", "@types/bcryptjs"],
+    },
   };
 
   for (const feature of features) {

@@ -1,14 +1,19 @@
-import { defineCommand } from "citty";
-import * as p from "@clack/prompts";
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { buildContext, detectFramework, detectLanguage, detectPackageManager } from "../core/detector.ts";
-import { createConfig, saveConfig, hasConfig, loadConfig } from "../core/config.ts";
+import * as p from "@clack/prompts";
+import { defineCommand } from "citty";
+import { createConfig, hasConfig, loadConfig, saveConfig } from "../core/config.ts";
+import {
+  buildContext,
+  detectFramework,
+  detectLanguage,
+  detectPackageManager,
+} from "../core/detector.ts";
+import { logger, setLogCwd } from "../core/logger.ts";
 import { scaffoldProject } from "../templates/engine.ts";
-import { logger } from "../core/logger.ts";
-import { c } from "../utils/colors.ts";
 import type { Framework, Language, PackageManager, ProjectType } from "../types/framework.ts";
-import { FRAMEWORKS, FRAMEWORK_META } from "../types/framework.ts";
+import { FRAMEWORK_META, FRAMEWORKS } from "../types/framework.ts";
+import { c } from "../utils/colors.ts";
 
 export default defineCommand({
   meta: {
@@ -26,6 +31,7 @@ export default defineCommand({
     p.intro(c.bold("🔧 Bliss Init"));
 
     const cwd = process.cwd();
+    setLogCwd(cwd);
     const isEmpty = readdirSync(cwd).length === 0;
 
     // Empty directory → offer full scaffold
@@ -40,7 +46,7 @@ export default defineCommand({
         const projectName = (await p.text({
           message: "Project name?",
           placeholder: "my-project",
-          validate: (v) => !v ? "Name required" : undefined,
+          validate: (v) => (!v ? "Name required" : undefined),
         })) as string;
 
         if (p.isCancel(projectName)) {
@@ -154,7 +160,7 @@ export default defineCommand({
       context.framework,
       context.language,
       context.packageManager,
-      context.entryFile || "src/index.ts"
+      context.entryFile || "src/index.ts",
     );
 
     saveConfig(config, cwd);
